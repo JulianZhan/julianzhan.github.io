@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Concurrency on</title><link>/tags/concurrency/</link><description>Recent content in Concurrency on</description><generator>Hugo</generator><language>en</language><lastBuildDate>Wed, 10 Dec 2025 18:00:00 +0800</lastBuildDate><atom:link href="/tags/concurrency/index.xml" rel="self" type="application/rss+xml"/><item><title>打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計</title><link>/engineering/consistent-redemptions/</link><pubDate>Wed, 10 Dec 2025 18:00:00 +0800</pubDate><guid>/engineering/consistent-redemptions/</guid><description>&lt;h3 id="1-前言一個自動化回滾的慘痛教訓"&gt;1. 前言：一個「自動化回滾」的慘痛教訓&lt;/h3&gt;
+&lt;p&gt;在上一篇《系統韌性》中，我們談到了如何透過韌性機制讓系統在瞬間大流量中活下來。但活下來之後，我們面對的是更嚴苛的挑戰：&lt;strong&gt;資料正確性&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;這是一個真實發生的慘案，源自於我們一次「想讓系統更好」的架構決策。&lt;/p&gt;
+&lt;h4 id="11-維運工具與自動化"&gt;1.1 維運工具與自動化&lt;/h4&gt;
+&lt;p&gt;在一個舊的兌換系統中，面對外部發券服務偶發的失敗，我們原本依賴一個「維運工具」，定期撈出失敗名單進行人工補發。
+但團隊為了追求自動化，決定採用一個策略：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;「如果呼叫外部發券 API Timeout，系統就當下直接執行 Rollback，讓用戶可以立刻重試。」&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;這個設計的出發點是善良的：我們不希望用戶因為網路或系統不穩定，導致資格被卡住。
+而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。&lt;/p&gt;
+&lt;h4 id="12-弄巧成拙27-張優惠券的誕生"&gt;1.2 弄巧成拙：27 張優惠券的誕生&lt;/h4&gt;
+&lt;p&gt;然而，我們沒預期到的事，外部服務會一口氣 timeout 27次。&lt;/p&gt;
+&lt;p&gt;當時的流程是 &lt;strong&gt;「同步直接兌換」&lt;/strong&gt;：用戶點擊 &amp;gt; 系統扣額度 &amp;gt; 呼叫外部 API 發券。
+當外部 API 回應太慢至 Timeout 時：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;系統判定失敗 &amp;gt; &lt;strong&gt;釋放用戶額度&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;外部系統其實&lt;strong&gt;已發券成功&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;用戶發現還可以兌換，於是&lt;strong&gt;再次點擊&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;這個流程在短時間內重複了數十次。最終有位客戶&lt;strong&gt;領到了 27 張折價券。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;這是一個寶貴的經驗，我們低估了系統可能出錯的機率、時間長度和深度。我們以為用戶頂多多領到一張折價券，結果卻是27張。&lt;/p&gt;
+&lt;h3 id="2-另一套系統的啟示因限制而生的安全緩衝"&gt;2. 另一套系統的啟示：因「限制」而生的安全緩衝&lt;/h3&gt;
+&lt;p&gt;慘案後，我剛好需要開發一套全新的兌換系統。&lt;/p&gt;
+&lt;p&gt;這個新系統有一個硬性限制：由於對接的外部服務特性，我們無法像舊系統那樣由後端直接呼叫 API 發券，必須改為產生一組「兌換連結」，讓用戶自己跳轉去網頁完成領取。&lt;/p&gt;
+&lt;p&gt;起初，我們對這個限制感到相當無奈。因為在直覺上，這代表用戶體驗（UX）被犧牲。&lt;/p&gt;
+&lt;p&gt;但就在實作過程中，我才後知後覺地發現：這個「被迫」的限制，竟然解決我們先前兌換時遇到的難題。&lt;/p&gt;
+&lt;p&gt;舊系統（直接兌換）： 系統試圖同步完成所有事，一旦 Timeout 就陷入「狀態未明」。&lt;/p&gt;
+&lt;p&gt;新系統（取連結模式）： 因為做不到直接兌換，強制切開了「鎖定資格」與「實際領取」。&lt;/p&gt;
+&lt;p&gt;這個不得不為之的「連結跳轉」，無意間創造了一個 「緩衝區」。如果外部系統 Timeout，用戶頂多是沒拿到連結（交易停在 Try 階段），而永遠不可能發生「系統以為失敗，但外部其實發券了」的狀況。
+這個改變至關重要，它為我們創造了一個安全的 &lt;strong&gt;「緩衝區」&lt;/strong&gt;，讓我們能安心地實作 &lt;strong&gt;TCC (Try-Confirm-Cancel)&lt;/strong&gt;，在分散式交易下來確保交易的正確性。&lt;/p&gt;
+&lt;h3 id="3-tcc-分散式交易模式"&gt;3. TCC 分散式交易模式&lt;/h3&gt;
+&lt;p&gt;我們將一筆兌換交易拆解為三個明確的階段：&lt;/p&gt;</description></item></channel></rss>

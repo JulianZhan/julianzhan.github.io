@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="light">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思 | Julian Zhan</title>
+<meta name="keywords" content="Database, GCP, Migration, DevOps">
+<meta name="description" content="為什麼搬？
+隨著公司推動雲原生，我們團隊雲原生化的路上，最棘手的挑戰，是 3 個還在 VM 裡的 MySQL 資料庫。
+這 3 個資料庫是早期的外部廠商建立的，對目前的團隊來說，它們就像是三個「黑箱」。大家不熟悉，平常也盡量不去修改它。
+除了版本較舊是 MySQL 5.7，也有著過度的 Over Provisioning，資料量只有幾十 GB，卻配置了 1 TB 的硬碟。
+因此，這次的資料庫 Migration 的目標：
+
+雲原生：搬遷至 Cloud SQL，減少維運成本。
+版本升級：從 MySQL 5.7 升級至 8.0。
+成本優化：解決資源浪費問題。
+
+遷移策略
+我有幸能主導這一項非常 Critical 的資料庫雲原生計畫，感恩主管給我這個機會。
+現在回頭看，覺得我當時的選擇很「笨」。但當時，團隊對於各種雲端功能還沒那麼高的掌握。我並不知道 Cloud SQL 其實支援 External Replica，可以把 Cloud SQL 設為 VM 的 Slave。
+在我當時的認知裡，資料庫遷移的標準作業程序：
+
+停機
+匯出
+搬運
+匯入
+
+大功告成！
+嚴密的規劃
+我們以較「笨」的方式執行，所以我更要確保每個執行步驟不能夠出錯。
+我也做了 3 件事來確保 Migration 能順利執行：
+
+
+視覺化流程
+口頭討論流程容易有盲點，所以我用 PlantUML 畫出了時序圖，包含萬一出意外時的 Rollback Plan（當然是希望不要用到）。
+什麼時間點切斷？什麼時間點執行 Dump？如果驗證失敗，切回舊 VM 的順序是什麼？這些都在圖上定義清楚，確保團隊認知一致。">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:56114/engineering/db-migration/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:56114/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:56114/engineering/db-migration/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript><link rel="stylesheet" href="/css/custom.css">
+
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:56114/engineering/" title="Engineering">
+                    <span>Engineering</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/notes/" title="Notes">
+                    <span>Notes</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思
+    </h1>
+    <div class="post-meta"><span title='2025-12-10 09:54:00 +0800 CST'>December 10, 2025</span>
+
+</div>
+  </header> 
+  <div class="post-content"><h3 id="為什麼搬">為什麼搬？<a hidden class="anchor" aria-hidden="true" href="#為什麼搬">#</a></h3>
+<p>隨著公司推動雲原生，我們團隊雲原生化的路上，最棘手的挑戰，是 3 個還在 VM 裡的 MySQL 資料庫。</p>
+<p>這 3 個資料庫是早期的外部廠商建立的，對目前的團隊來說，它們就像是三個「黑箱」。大家不熟悉，平常也盡量不去修改它。</p>
+<p>除了版本較舊是 MySQL 5.7，也有著過度的 Over Provisioning，資料量只有幾十 GB，卻配置了 1 TB 的硬碟。</p>
+<p>因此，這次的資料庫 Migration 的目標：</p>
+<ol>
+<li>雲原生：搬遷至 Cloud SQL，減少維運成本。</li>
+<li>版本升級：從 MySQL 5.7 升級至 8.0。</li>
+<li>成本優化：解決資源浪費問題。</li>
+</ol>
+<h3 id="遷移策略">遷移策略<a hidden class="anchor" aria-hidden="true" href="#遷移策略">#</a></h3>
+<p>我有幸能主導這一項非常 Critical 的資料庫雲原生計畫，感恩主管給我這個機會。
+現在回頭看，覺得我當時的選擇很「笨」。但當時，團隊對於各種雲端功能還沒那麼高的掌握。我並不知道 Cloud SQL 其實支援 External Replica，可以把 Cloud SQL 設為 VM 的 Slave。</p>
+<p>在我當時的認知裡，資料庫遷移的標準作業程序：</p>
+<ol>
+<li><strong>停機</strong></li>
+<li><strong>匯出</strong></li>
+<li><strong>搬運</strong></li>
+<li><strong>匯入</strong></li>
+</ol>
+<p>大功告成！</p>
+<h3 id="嚴密的規劃">嚴密的規劃<a hidden class="anchor" aria-hidden="true" href="#嚴密的規劃">#</a></h3>
+<p>我們以較「笨」的方式執行，所以我更要確保每個執行步驟不能夠出錯。</p>
+<p>我也做了 3 件事來確保 Migration 能順利執行：</p>
+<ol>
+<li>
+<p>視覺化流程
+口頭討論流程容易有盲點，所以我用 PlantUML 畫出了時序圖，包含萬一出意外時的 Rollback Plan（當然是希望不要用到）。
+什麼時間點切斷？什麼時間點執行 Dump？如果驗證失敗，切回舊 VM 的順序是什麼？這些都在圖上定義清楚，確保團隊認知一致。</p>
+</li>
+<li>
+<p>定義明確的 Owner
+我也精確做了每個步驟的責任歸屬：</p>
+</li>
+</ol>
+<ul>
+<li>DB Owner：負責執行 SQL 指令、監控 Cloud SQL 狀態。</li>
+<li>App Owner：負責切斷連線、部署新 Config、執行驗證 Script。</li>
+<li>PM：負責對外公告與 Stakeholder 溝通。</li>
+</ul>
+<ol start="3">
+<li>Runbook
+我準備了一份詳細的 Excel 表，列出當晚該做的事。包含所有要下的 Command，全部先寫好。</li>
+</ol>
+<p>因為有了這份詳盡的規劃，即便後來發生了意外，團隊也更有方向解決。</p>
+<h3 id="分階段遷移">分階段遷移<a hidden class="anchor" aria-hidden="true" href="#分階段遷移">#</a></h3>
+<p>除了工具的準備，我在 Migration 的順序上也做了風險控管。我們沒有一次梭哈，而是將三個資料庫依據風險依序進行：</p>
+<ol>
+<li>
+<p>DB1: 雖有些敏感資訊，但使用率最低。如此可以作為金絲雀，用來驗證整套 Dump &amp; Import 流程與 Application 連線設定是否正確。</p>
+</li>
+<li>
+<p>DB2: 再來是存放 Config 設定的資料庫，資料本身不敏感，但必須確保讀取不能有任何問題，否則 App 會無法開啟。</p>
+</li>
+<li>
+<p>DB3: 最後則是結構最複雜、商業邏輯最多，也最 Critical 的資料庫。</p>
+</li>
+</ol>
+<p>我們在 SIT/UAT 依序進行，也都進行 Migration &amp; Rollback 演練，再把資料庫依風險來上線、觀察。</p>
+<h3 id="意外一時區錯亂">意外一：時區錯亂<a hidden class="anchor" aria-hidden="true" href="#意外一時區錯亂">#</a></h3>
+<p>在 DB1 Migration 時，我們發現資料庫紀錄的 <code>created_at</code> 時間全部往前了 8 小時。原本應該是中午 12:00 ，在資料庫裡變成了凌晨 04:00。</p>
+<p><strong>Root Cause：</strong>
+這是新舊環境時區差異造成的。
+<strong>舊環境（VM）：</strong> 設定為 <code>Asia/Taipei</code> (UTC+8)。
+<strong>新環境（Cloud SQL）：</strong> 設定為<code>UTC</code>。
+<strong>導火線：</strong> 當我們用 <code>mysqldump</code> 匯出時，它將原本的 UTC+8 時間轉為 UTC 儲存；再以 UTC 時間匯入到 Cloud SQL 時，Cloud SQL 直接儲存這些 UTC 時間。</p>
+<p>資料庫的紀錄是時區不同導致的，而有另一個問題來自於 Application。 我們的 Spring Boot 應用程式，連線字串中原本設定了 serverTimezone=Asia/Taipei。 當 Application 連線到現在已經是 UTC 的 Cloud SQL 時，Driver 會「雞婆」地再進行一次時區轉換（以為 DB 還是 +8，所以讀取時又減了 8 小時），導致最終顯示給 User 的時間錯亂。</p>
+<p><strong>進行雙重修正來解決：</strong>
+資料層面（校正歷史資料）： 由於服務已經上線，不考慮重新匯入。我緊急撰寫了一個 Stored Procedure，鎖定 Migration 時間點前的所有資料，把時間強制校正回來。
+應用層面（校正未來資料）： 移除 Spring Boot 中的 serverTimezone=Asia/Taipei。統一用 UTC 溝通，清楚、乾淨。</p>
+<h3 id="意外二cicd-的替換失效">意外二：CICD 的替換失效<a hidden class="anchor" aria-hidden="true" href="#意外二cicd-的替換失效">#</a></h3>
+<p>在部署 DB2 時，我們遇到了另一個問題：部署完成了，但 App 卻一直連不上新的資料庫。</p>
+<p>我檢查了所有網路設定、防火牆、ProxySQL，看起來都正常。最後回去翻 CICD 的 Log 才發現問題出在 .env 檔案的替換腳本。</p>
+<p><strong>Root Cause：</strong>
+我們的 CICD Pipeline 使用 sed 指令來替換 .env 中的 DB Host。
+<code>sed -i &quot;s|DB_HOST_READ=old_vm_dns|DB_HOST_READ=${NEW_CLOUD_SQL_IP}|g&quot; .env</code></p>
+<p>在 SIT 環境中，CICD 替換的是<code>SIT_DB_HOST_READ</code> 而不是 <code>DB_HOST_READ</code>。導致 sed 根本沒有執行替換，Application 還是使用舊的連線設定，當然連不上。
+<code>sed -i &quot;s|SIT_DB_HOST_READ=old_vm_dns|SIT_DB_HOST_READ=${NEW_CLOUD_SQL_IP}|g&quot; .env</code></p>
+<p>超坑！好險不是在 Production 部署時撞到。</p>
+<h3 id="意外三維護資料庫居然繼續被寫入">意外三：維護，資料庫居然繼續被寫入!<a hidden class="anchor" aria-hidden="true" href="#意外三維護資料庫居然繼續被寫入">#</a></h3>
+<p>到了正式 Migration DB3，我們依照 Runbook，在 00:00 準時公告維護，並切斷了 App 的流量入口。</p>
+<p>但在準備執行 Cloud SQL 和 VM SQL 的資料一致性檢查，我們卻發現：竟然還有新的資料寫進來VM SQL！</p>
+<p><strong>Root Cause：</strong>
+原來雖然設定了維護公告，但 APP 還是會 Call 一些 APIs，這些 APIs 會更新資料庫的 updated_at 之類的欄位，導致資料庫一直有資料被更新，沒有真正一個被乾淨切斷的時間點。</p>
+<p><strong>解決方案：</strong>
+我們立即在舊的 Master VM 執行：
+<code>SET GLOBAL read_only = 1;</code>
+徹底鎖住資料庫，在資料庫層級強制拒絕所有寫入。</p>
+<h3 id="意外四migration-後整個-app-混亂">意外四：Migration 後整個 APP 混亂<a hidden class="anchor" aria-hidden="true" href="#意外四migration-後整個-app-混亂">#</a></h3>
+<p>是最驚險的一刻。也同樣是 Migration DB3 那晚，因為前面發生的資料庫在維護下仍被寫入的問題，導致我們比對資料不一致，不得不重新匯入了好幾次。</p>
+<p>當我們終於確認 Cloud SQL 和 VM SQL 資料一致後，卻發現 App 運作怪怪的，讀不到資料。</p>
+<p><strong>Root Cause</strong>： 為了分擔流量，我們在 Cloud SQL 上建置了 Read Replica。但因為我們在 Master 上進行了多次的大量匯入與刪除操作，產生大量的 Binlog。這台 Replica 為了追上這些變動，已經落後 16 個小時。當時已經是凌晨 04:00，我們沒辦法接受這樣的處境。</p>
+<p><strong>解決方案</strong>： Rollback？我當下判斷：與其等它追完那些 Binlog，不如直接砍掉重練。與 Infra 團隊確認後，決定直接刪除該 Replica，重新建立一個全新的。</p>
+<p>雖然重建也需要時間，但比 16 小時快多了。最終，新的 Replica 在一小時內同步完成，服務順利復活。</p>
+<h3 id="事後諸葛如果重來一次我會怎麼做">事後諸葛：如果重來一次，我會怎麼做？<a hidden class="anchor" aria-hidden="true" href="#事後諸葛如果重來一次我會怎麼做">#</a></h3>
+<p>這場 Migration 最終是成功的，但過程確實是「硬著陸」。</p>
+<p>後來隨著我對 GCP 的研究更深入，我才發現原來 Cloud SQL 支援 External Replica，甚至有 Database Migration Service。</p>
+<p>如果重來一次，有著更豐富的知識量，我會讓 Cloud SQL 扮演 VM 的 Slave，持續同步資料。來達成</p>
+<ol>
+<li>
+<p>極短的停機時間</p>
+</li>
+<li>
+<p>進退有路：如果不幸同步失敗，原本的主機還活著，隨時可以取消</p>
+</li>
+<li>
+<p>提早驗證：可以在同步過程中先驗證資料，不影響運行中的服務</p>
+</li>
+</ol>
+<p>當時的我不知道這個選項，但這次的「笨方法」經歷，反而使我更能感受到 Database Migration 的風險。</p>
+<h3 id="結語">結語<a hidden class="anchor" aria-hidden="true" href="#結語">#</a></h3>
+<p>雖然這場 Migration 是一次「硬著陸」，過程中也踩了不少雷，但最終我們達成：</p>
+<ol>
+<li>雲原生：搬遷至 Cloud SQL，減少維運成本。</li>
+<li>版本升級：從 MySQL 5.7 升級至 8.0。</li>
+<li>成本優化：解決資源浪費問題。</li>
+</ol>
+<p>更重要的是，這次經驗讓我學到寶貴的一課：身為一位工程師，不僅僅是技術能力能幫助到我的工作，詳盡的規劃與果斷的決策也非常重要。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://localhost:56114/tags/database/">Database</a></li>
+      <li><a href="http://localhost:56114/tags/gcp/">GCP</a></li>
+      <li><a href="http://localhost:56114/tags/migration/">Migration</a></li>
+      <li><a href="http://localhost:56114/tags/devops/">DevOps</a></li>
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

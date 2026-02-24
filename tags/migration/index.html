@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="light">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Migration | Julian Zhan</title>
+<meta name="keywords" content="">
+<meta name="description" content="">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:56114/tags/migration/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:56114/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:56114/tags/migration/index.xml" title="rss">
+<link rel="alternate" hreflang="en" href="http://localhost:56114/tags/migration/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript><link rel="stylesheet" href="/css/custom.css">
+
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:56114/engineering/" title="Engineering">
+                    <span>Engineering</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/notes/" title="Notes">
+                    <span>Notes</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header">
+  <h1>
+    Migration
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>為什麼搬？ 隨著公司推動雲原生，我們團隊雲原生化的路上，最棘手的挑戰，是 3 個還在 VM 裡的 MySQL 資料庫。
+這 3 個資料庫是早期的外部廠商建立的，對目前的團隊來說，它們就像是三個「黑箱」。大家不熟悉，平常也盡量不去修改它。
+除了版本較舊是 MySQL 5.7，也有著過度的 Over Provisioning，資料量只有幾十 GB，卻配置了 1 TB 的硬碟。
+因此，這次的資料庫 Migration 的目標：
+雲原生：搬遷至 Cloud SQL，減少維運成本。 版本升級：從 MySQL 5.7 升級至 8.0。 成本優化：解決資源浪費問題。 遷移策略 我有幸能主導這一項非常 Critical 的資料庫雲原生計畫，感恩主管給我這個機會。 現在回頭看，覺得我當時的選擇很「笨」。但當時，團隊對於各種雲端功能還沒那麼高的掌握。我並不知道 Cloud SQL 其實支援 External Replica，可以把 Cloud SQL 設為 VM 的 Slave。
+在我當時的認知裡，資料庫遷移的標準作業程序：
+停機 匯出 搬運 匯入 大功告成！
+嚴密的規劃 我們以較「笨」的方式執行，所以我更要確保每個執行步驟不能夠出錯。
+我也做了 3 件事來確保 Migration 能順利執行：
+視覺化流程 口頭討論流程容易有盲點，所以我用 PlantUML 畫出了時序圖，包含萬一出意外時的 Rollback Plan（當然是希望不要用到）。 什麼時間點切斷？什麼時間點執行 Dump？如果驗證失敗，切回舊 VM 的順序是什麼？這些都在圖上定義清楚，確保團隊認知一致。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-10 09:54:00 +0800 CST'>December 10, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思" href="http://localhost:56114/engineering/db-migration/"></a>
+</article>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從 PHP 到 Java：100&#43; API 的「考古」與重構之旅
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Legacy 系統的負擔 這次想分享的挑戰，是要把外部廠商開發的 PHP Laravel 後端系統，接回內部營運。 這套系統有 100 多支 API，開發時間很早，隨著時間推移，逐漸成為團隊的負擔
+缺乏文件：當初的商業邏輯不可考，程式碼是我們唯一能參考的文件。 維護困難：動態語言的特性加上開發時缺乏規範，出問題時也很難查詢。 效能瓶頸：資料庫查詢缺乏優化。 認知負擔：團隊主要使用 Java，維護這套系統是額外的認知負擔。 為了精簡 Tech Stack，和近一步掌握這套 Legacy 系統，我們決定開始 API Migration：將 PHP Laravel 系統從 Kubernetes 重寫為 Java Spring Boot，並部署至 Cloud Run。
+遷移策略 100&#43; 支 API，不可能一次做好再上線。
+我們採取的是 「絞殺榕模式」，漸進地取代舊系統。
+我們的執行步驟大略如下：
+挑選目標：從功能最獨立、風險最小的 API 開始。 並行：舊的 PHP 繼續跑，同時開發新的 Java 版本，舊 PHP 跑在原本的 K8s 上，新服務則部署到 Cloud Run。 API 落地：與 App 工程師配合，將新版 API 上線。 持續監控：觀察新 API 穩定後，才將舊 PHP 下線。 這種「一隻一隻搬」的策略，過程拉得較長，但每一次 API Migration 的風險都較為可控。
+Code is the only Documentation 這次 Migration 最困難的是 「考古」。 因為沒有明確可靠的 Spec，我們必須讀懂原本 PHP 在做什麼，然後改寫成 Java。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-09 11:22:00 +0800 CST'>December 9, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從 PHP 到 Java：100&#43; API 的「考古」與重構之旅" href="http://localhost:56114/engineering/php-to-java-migration/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+</body>
+
+</html>

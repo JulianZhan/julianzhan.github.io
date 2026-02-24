@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="light">
+
+<head>
+	<meta name="generator" content="Hugo 0.152.2"><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Julian Zhan</title>
+
+<meta name="description" content="">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:56114/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:56114/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:56114/index.xml" title="rss">
+<link rel="alternate" hreflang="en" href="http://localhost:56114/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript><link rel="stylesheet" href="/css/custom.css">
+
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:56114/engineering/" title="Engineering">
+                    <span>Engineering</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/notes/" title="Notes">
+                    <span>Notes</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<article class="first-entry home-info">
+    <header class="entry-header">
+        <h1>Hi, I&rsquo;m Julian</h1>
+    </header>
+    <div class="entry-content">
+        <p>Backend Engineer | <a href="mailto:julianzhan6@gmail.com">julianzhan6@gmail.com</a></p>
+<p>I build reliable backend systems with a data science foundation. This is where I write to clarify my thinking on system design, architecture, and engineering practices.</p>
+
+    </div>
+    <footer class="entry-footer">
+        <div class="social-icons" >
+</div>
+
+    </footer>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>1. 前言：一個「自動化回滾」的慘痛教訓 在上一篇《系統韌性》中，我們談到了如何透過韌性機制讓系統在瞬間大流量中活下來。但活下來之後，我們面對的是更嚴苛的挑戰：資料正確性。
+這是一個真實發生的慘案，源自於我們一次「想讓系統更好」的架構決策。
+1.1 維運工具與自動化 在一個舊的兌換系統中，面對外部發券服務偶發的失敗，我們原本依賴一個「維運工具」，定期撈出失敗名單進行人工補發。 但團隊為了追求自動化，決定採用一個策略：
+「如果呼叫外部發券 API Timeout，系統就當下直接執行 Rollback，讓用戶可以立刻重試。」
+這個設計的出發點是善良的：我們不希望用戶因為網路不穩定，導致資格被卡住。 而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。
+1.2 弄巧成拙：27 張優惠券的誕生 然而，我們沒預期到的事，外部服務會一口氣 timeout 27次。
+當時的流程是 「同步直接兌換」：用戶點擊 &gt; 系統扣額度 &gt; 呼叫外部 API 發券。 當外部 API 回應太慢至 Timeout 時：
+系統判定失敗 &gt; 釋放用戶額度。 外部系統其實已發券成功。 用戶發現還可以兌換，於是再次點擊。 這個流程在短時間內重複了數十次。最終有位客戶領到了 27 張折價券。
+這是一個寶貴的經驗，我們低估了系統可能出錯的機率、時間長度和深度。我們以為用戶頂多多領到一張折價券，結果卻是27張。
+2. 架構進化：從「直接兌換」到「取得連結」 在建構新的兌換服務時，我們改變了交易流程。
+我們不再「直接呼叫發貨」，而是改為 **「取得兌換連結」**模式。 這個改變至關重要，它為我們創造了一個安全的 「緩衝區」，讓我們能安心地實作 TCC (Try-Confirm-Cancel)，在分散式交易下來確保交易的正確性。
+3. TCC 分散式交易模式 我們將一筆兌換交易拆解為三個明確的階段：
+Try (資源預留 &amp; 取得連結)：
+鎖定資源：在資料庫中鎖定全域庫存與該用戶的可用額度。狀態設為 RESERVED。 外部請求：取得結帳連結。 關鍵防護： 為什麼改成「取得連結」就能防禦？ 如果這一步 Timeout，我們可以放心地執行 Cancel。因為只要用戶「沒拿到連結」，他就無法進行後續的兌換。就算外部系統真的生成了一個的購物車連結，只要連結沒送達用戶手上，這筆交易就實質失敗了。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-10 18:00:00 +0800 CST'>December 10, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計" href="http://localhost:56114/engineering/consistent-redemptions/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從連續故障到系統韌性：JDBC 連線與大流量衝擊
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>1. 系統崩潰的兩種形式 在維運高流量系統時，我們最害怕的往往不是寫出 Bug，而是面對那些「不可控」的因素。根據過去一年的經驗，我發現系統崩潰常來自兩個不可控因素：
+內憂：資料庫連線莫名卡死，服務崩潰。 外患：高峰流量瞬間衝垮第三方服務，導致連鎖效應，最終拖垮自己。 這篇文章將還原一次我們處理會員系統資料庫連線的完整排查過程，以及我們如何建立多層防禦機制，避免第三方系統拖垮自己。
+2. 內憂：不穩定的資料庫連線 某個週五晚上，我們的監控系統發出警報：會員系統的 Error Rate 飆升，大量的 API 請求噴出 GetConnectionTimeoutException。
+詭異的是：
+資料庫還活著：Cloud SQL 的 CPU 和 Memory 指標完全正常。 資料庫連線建不起來：監控顯示 Druid Connection Pool 的 active=0，但 creating=1，且 createElapseMillis 出現了已經累積數百萬毫秒。 這代表：應用程式試圖建立連線，但 TCP 層級既沒有成功，也沒有失敗，而是掉進了黑洞。
+2.1 第一階段：懷疑 Stale Connection 我們最初的懷疑點是網路架構中的 Connection Pool Timeout 不一致。 我們的架構是 App -&gt; HAProxy (Timeout 60s) -&gt; Cloud SQL。而 Druid Connection Pool 的 minEvictableIdleTimeMillis 預設是 5 分鐘。
+假設： HAProxy 已經砍掉了閒置連線，但 Druid 還以為這條連線是好的。當 Application 拿到這條「髒連線」時，就會發生異常。
+我們進行了第一波優化：
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-10 17:03:00 +0800 CST'>December 10, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從連續故障到系統韌性：JDBC 連線與大流量衝擊" href="http://localhost:56114/engineering/system-resilience-practice/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>為什麼搬？ 隨著公司推動雲原生，我們團隊雲原生化的路上，最棘手的挑戰，是 3 個還在 VM 裡的 MySQL 資料庫。
+這 3 個資料庫是早期的外部廠商建立的，對目前的團隊來說，它們就像是三個「黑箱」。大家不熟悉，平常也盡量不去修改它。
+除了版本較舊是 MySQL 5.7，也有著過度的 Over Provisioning，資料量只有幾十 GB，卻配置了 1 TB 的硬碟。
+因此，這次的資料庫 Migration 的目標：
+雲原生：搬遷至 Cloud SQL，減少維運成本。 版本升級：從 MySQL 5.7 升級至 8.0。 成本優化：解決資源浪費問題。 遷移策略 我有幸能主導這一項非常 Critical 的資料庫雲原生計畫，感恩主管給我這個機會。 現在回頭看，覺得我當時的選擇很「笨」。但當時，團隊對於各種雲端功能還沒那麼高的掌握。我並不知道 Cloud SQL 其實支援 External Replica，可以把 Cloud SQL 設為 VM 的 Slave。
+在我當時的認知裡，資料庫遷移的標準作業程序：
+停機 匯出 搬運 匯入 大功告成！
+嚴密的規劃 我們以較「笨」的方式執行，所以我更要確保每個執行步驟不能夠出錯。
+我也做了 3 件事來確保 Migration 能順利執行：
+視覺化流程 口頭討論流程容易有盲點，所以我用 PlantUML 畫出了時序圖，包含萬一出意外時的 Rollback Plan（當然是希望不要用到）。 什麼時間點切斷？什麼時間點執行 Dump？如果驗證失敗，切回舊 VM 的順序是什麼？這些都在圖上定義清楚，確保團隊認知一致。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-10 09:54:00 +0800 CST'>December 10, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思" href="http://localhost:56114/engineering/db-migration/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從 PHP 到 Java：100&#43; API 的「考古」與重構之旅
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Legacy 系統的負擔 這次想分享的挑戰，是要把外部廠商開發的 PHP Laravel 後端系統，接回內部營運。 這套系統有 100 多支 API，開發時間很早，隨著時間推移，逐漸成為團隊的負擔
+缺乏文件：當初的商業邏輯不可考，程式碼是我們唯一能參考的文件。 維護困難：動態語言的特性加上開發時缺乏規範，出問題時也很難查詢。 效能瓶頸：資料庫查詢缺乏優化。 認知負擔：團隊主要使用 Java，維護這套系統是額外的認知負擔。 為了精簡 Tech Stack，和近一步掌握這套 Legacy 系統，我們決定開始 API Migration：將 PHP Laravel 系統從 Kubernetes 重寫為 Java Spring Boot，並部署至 Cloud Run。
+遷移策略 100&#43; 支 API，不可能一次做好再上線。
+我們採取的是 「絞殺榕模式」，漸進地取代舊系統。
+我們的執行步驟大略如下：
+挑選目標：從功能最獨立、風險最小的 API 開始。 並行：舊的 PHP 繼續跑，同時開發新的 Java 版本，舊 PHP 跑在原本的 K8s 上，新服務則部署到 Cloud Run。 API 落地：與 App 工程師配合，將新版 API 上線。 持續監控：觀察新 API 穩定後，才將舊 PHP 下線。 這種「一隻一隻搬」的策略，過程拉得較長，但每一次 API Migration 的風險都較為可控。
+Code is the only Documentation 這次 Migration 最困難的是 「考古」。 因為沒有明確可靠的 Spec，我們必須讀懂原本 PHP 在做什麼，然後改寫成 Java。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-09 11:22:00 +0800 CST'>December 9, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從 PHP 到 Java：100&#43; API 的「考古」與重構之旅" href="http://localhost:56114/engineering/php-to-java-migration/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">溝通，Debug 那些程式碼之外的 Bug
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>溝通這一項軟實力，我一直都知道很重要，但總覺得很抽象、捉摸不定，很難去培養，以及體會。 然而隨著經驗的累積，我有幸有些具體的經驗，使我能體會到，「溝通」如何影響我們的工作以及產品。
+特別是在與外部廠商協作時，我發現許多問題的Root Cause 並不是技術，而是資訊落差。
+先別急著批評，保持客觀、誠摯，合作去解決問題，這是我常常秉持的心態，這是我的信念，是我的優點。
+也讓我有兩次成功與外包商溝通的經驗。
+那些「感覺我很爛」的時刻 不過我也想先說，這個優點其實是一體兩面的。
+因為想著「不急著批評」，當問題發生時，我的反應往往沒那麼快。當有人質疑這個問題是我造成時，我沒辦法，也不習慣，快速地反應。我習慣先檢查看看自己的系統和邏輯，確認無誤後，再給出明確的回覆。
+這聽起來很理想，但在那個當下其實很難熬。 每當經歷這種時刻，大家手指指來指去，沈默的時間總讓我覺得，別人是不是認爲我「心虛」。
+在這個時刻，心裡很不好受，啞巴吃黃連的感覺。
+所以我也說這算是一體兩面的吧！是優點，但也是讓人難受的缺點。
+Case 1：慢到無法忍受的 API 第一個案例是關於系統效能。 在某次與外包商合作的系統中，我們發現外包商的兌換 API 的回應時間長達 2 秒以上。
+根據過往合作經驗，大家習慣性認為，「外包商技術就是差」、「寫這什麼爛 Code」。當然我也能理解，這是慣性，批評很容易，而且批評別人寫爛 Code 很爽，還能再呈現出一些自己技術上的優越感。
+但在我心中，我是真的納悶，為什麼 API 能那麼慢，我是抱著認真疑惑並且想解決的態度詢問，速度能不能在優化。
+當然，這個過程需要來回幾次溝通，對方會說：「我們這裡觀察到速度都很快」 而我會再提供些數據和再進一步追問細節，像是：「從我們這裡的 Log 來看，每個步驟的速度是這樣…，你們 API 確實回應超過2秒…」 「還是你們能提供每個步驟所花費的時間整理，像這樣的範例…」
+在釐清流程後，發現廠商串接我們內部的 Legacy 系統，取會員資料時被拖慢了速度。
+理清楚真正的效能瓶頸後，我發現這是資訊落差的問題。
+我們內部其實有一個新的、快取過的輕量會員資訊，回應只需 50ms，但從來沒有人告訴廠商這個資訊。
+於是我請廠商修改使用輕量會員資訊 API ，回應時間瞬間降到 200ms 以下。我們沒改任何系統架構，只是彌平資訊的落差。
+Case 2：清晰的流程圖勝過千言萬語 第二個案例是關於「既有成見」。
+當時長官希望能提升 UI/UX 體驗，要求將原本「外開」的兌換頁面，改為 App 內的「內嵌」。
+這個需求一下來，馬上在團隊內部遇到阻力。資深成員說：「那個廠商以前說過架構限制，只能外開，內嵌會有問題，做不到。」
+「以前說過不行」是一個很強大的阻礙。我們最初會規劃成外開，其實就是因為我們之前的經驗，認為該兌換頁面就只能夠外開。
+但既然收到了提升體驗的指令，我們就盡力去解決它。
+不過身為後端工程師，我對 App 端如何處理 WebView 並不清楚。於是我先去請教我們的 App 工程師：「假設廠商功能正常，如果我們想做內嵌，需要什麼？」
+這是 App 工程師的專業，在他們的解釋下，我們才理出了解決方向。但我還是很擔心，即便我懂了，該怎麼跟廠商溝通才不會雞同鴨講？
+剛好，那幾天我看到了一句話：「最高效的溝通，就是直接把流程圖畫出來。」沒有模糊空間，大家理解才會一致。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-05 17:05:00 +0800 CST'>December 5, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 溝通，Debug 那些程式碼之外的 Bug" href="http://localhost:56114/notes/communicate-to-debug/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">先寫 Spec，再讓 AI 寫程式
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>AI出來已經3年，對軟體業的衝擊是不得不面對的挑戰。而且我認為 AI is real，AI並不會曇花一現、消失、死去，而會變成像是網路、搜尋引擎、手機、電腦這類科技產品，幾乎算是民生必需品了。
+還記得大學時接觸的NLP模型，只能簡短地寫故事，像是「今天天氣好，小明…」。可以作為娛樂，但要實際在工作上有幫助差距尚遠。
+然而，2022年底，Chat GPT剛問世，發現這東西顛覆了我對NLP模型的認知。GPT可以回答出很多艱澀的問題，我引以為豪的統計知識，GPT也都能侃侃而談，給出很多精準、有價值的建議。
+從一開始的複製「Code到IDE」，而再到更深度的整合 Copilot &amp; Claude Code，我認為AI已經徹底融入軟體工程師的每個環節，我們必須學習如何擁抱AI，藉由AI讓自己生產力提高，而不是與之背道而行。
+也能更誇張一點的說，工程師的工作內容從「如何寫出 Code」轉變成了「如何藉由 AI產出 Code並且駕馭它」。而我想分享的方法「先寫 Spec，再讓 AI 寫程式」，則是我在工作中，發現和 AI互動很高效的方式。
+這次經驗中，我為 AI 準備了什麼？ 在一次專案實戰中，由於涉及比較複雜的訂單與庫存邏輯，一時半載其實我也還沒理清楚所有邏輯，我意識到如果直接請 AI實作，AI 肯定會的一團糟，邏輯凌亂又分散。 所以這一次，我反而沒有急著寫 Code，而是試著先準備好以下四樣東西，當作給 AI 的「施工圖」：
+API Interface：我先定義好給 Client 端串接的 Input &amp; Output，確保前後端的契約一致，也讓前端儘早開工。
+State Machine：訂單狀態的流轉邏輯（例如：從 Reserved 到 Pending 再到 Confirmed），我先把規則定清楚，確保邏輯一致，不讓 AI 自由發揮，也確保訂單維持在我們可控的狀態下轉換。
+Database Schema：我先設計好 Schema，包含控庫存、檔期、訂單狀態的資料表。
+PlantUML 流程圖：最後，我畫出了 Sequence Diagram，確認系統各個整個訂單執行的時序。
+先寫Spec，為什麼更好？ 如果直接叫 AI「寫一個控庫存、防止超賣的功能」，它只會給出最簡單的Happy Flow邏輯。但在實際應用中，我們要處理併發、要處理 Rollback、以及各種可能發生的異常狀況，目前的 AI 很難一步到位，考量到這麼精細、異常的控制。
+一步一步寫出Spec，接下來再引導 AI 實作，讓 AI 在需要精細控制的地方能表現更好。
+從工匠到建築師 這種先寫 Spec的方式，是我第一次切身感到和 AI 開發的魅力，感到 AI 已經徹底改變軟體開發的方式，讓我感覺更像一名建築師、監督者、規劃者。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-11-29 14:54:00 +0800 CST'>November 29, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 先寫 Spec，再讓 AI 寫程式" href="http://localhost:56114/notes/how-i-use-ai-spec-first/"></a>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從 Jupyter Notebook 到 Production Code
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>我大學念的是統計，畢業後先擔任Data Scientist，後來再轉職成為軟體工程師。 身為一個統計出身的人，這不只是技術上的變化，也是心態以及文化上的轉變。
+以前在寫 Python，用 Notebook 時，我總感覺自己像是在實驗室裡，目標是挖掘這些數據背後的資訊。我要的是圖表、是 Insight、是一個準確的模型。變數名稱叫 df1 或 tmp 沒關係，程式碼寫得髒一點也無所謂，因為模型建完了、報告交出去時，這一個 Notebook 所累積的段程式碼的任務就結束了。
+當時的我，並不真正理解什麼是「維護」，對於將程式碼部署到「Production 環境」意味著什麼，概念也相當模糊。
+直到當我轉向後端開發，開始接觸到企業系統時，我才漸漸摸清楚軟體工程是怎麼樣的一個建造過程。不再像是在實驗室，而是更貼近地氣的真槍實彈。
+我相信每個統計人，都會經歷相似的心態轉換。
+時間維度：當下 vs. 未來 在 Notebook 裡，我們關注的是「當下」。 只要現在 Cell 是綠色的，圖表是對的，那就夠了。前面定義的變數，後面隨時都能用。這種開發模式非常靈活，有點雜亂，但是超方便。
+但在 Production Code 裡，我們變得必須要關注「未來」。 我寫下的每一行 Code，三個月後，接手的同事能不能看懂？這個 Class 這樣設計，隨著邏輯和業務量增加會不會變越來越難維護？
+從這裡開始，我的程式碼生命週期不再是局限於一個 Notebook，而是需要持續、不間斷的、在可預期的未來內，持續服務。
+交付形式的轉變：從「手動執行」到「應用落地」 這種工程思維的轉變，讓我感覺更為扎實。
+之前在用 Notebook 時，我常常思考：「我這樣的模型，要怎麼真的應用？」 當時，每次預測都得由我打開 Notebook 手動執行一次，這聽起來很不實際，也很難規模化。我認為有更好的方式，但以我當時的知識，又找不到更好的解答。
+直到我接觸了軟體工程，才真正明白如何將一個模型、邏輯包裝成應用服務。這種「把應用落地」的能力，補足了我過去身為 Data Scientist 時，「總感覺像是在實驗室」的拼圖。
+反饋機制的改變 習慣用 Jupyter，最依賴的就是 REPL 的即時反饋，我白話為「隨時都需要Print」。寫一行、跑一行、看一下結果，不對就改。當時的我，認為邊寫邊 Print 好像有點怪怪的，但又無法脫離。
+轉到軟體工程後，修改邏輯、編譯、部署、打 API、看 Log，這個反饋的時間變長了。不像 REPL 能及時給我反饋。
+這使我必須先想清楚資料流怎麼跑、例外怎麼處理。Java 也幫助我很多，強型態的語言，讓我在理解資料流的轉換時也更加清晰。
+統計背景為我帶來的 適應工程師的嚴謹是一個漫長的文化和心態的轉變。但回過頭看，過去的統計背景並沒有白費，反而帶來了些優勢。
+挑軟一點的能力說，我更擅長數據思維。在做系統監控時，更能理解 P95、P99 與平均值之間的差異與意義。
+挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-11-28 17:05:00 +0800 CST'>November 28, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從 Jupyter Notebook 到 Production Code" href="http://localhost:56114/notes/statistics-to-software/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+</body>
+
+</html>

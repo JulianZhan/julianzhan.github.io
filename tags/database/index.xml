@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Database on Julian Zhan</title>
+    <link>http://localhost:56114/tags/database/</link>
+    <description>Recent content in Database on Julian Zhan</description>
+    <generator>Hugo -- 0.152.2</generator>
+    <language>en-us</language>
+    <lastBuildDate>Wed, 10 Dec 2025 09:54:00 +0800</lastBuildDate>
+    <atom:link href="http://localhost:56114/tags/database/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思</title>
+      <link>http://localhost:56114/engineering/db-migration/</link>
+      <pubDate>Wed, 10 Dec 2025 09:54:00 +0800</pubDate>
+      <guid>http://localhost:56114/engineering/db-migration/</guid>
+      <description>&lt;h3 id=&#34;為什麼搬&#34;&gt;為什麼搬？&lt;/h3&gt;
+&lt;p&gt;隨著公司推動雲原生，我們團隊雲原生化的路上，最棘手的挑戰，是 3 個還在 VM 裡的 MySQL 資料庫。&lt;/p&gt;
+&lt;p&gt;這 3 個資料庫是早期的外部廠商建立的，對目前的團隊來說，它們就像是三個「黑箱」。大家不熟悉，平常也盡量不去修改它。&lt;/p&gt;
+&lt;p&gt;除了版本較舊是 MySQL 5.7，也有著過度的 Over Provisioning，資料量只有幾十 GB，卻配置了 1 TB 的硬碟。&lt;/p&gt;
+&lt;p&gt;因此，這次的資料庫 Migration 的目標：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;雲原生：搬遷至 Cloud SQL，減少維運成本。&lt;/li&gt;
+&lt;li&gt;版本升級：從 MySQL 5.7 升級至 8.0。&lt;/li&gt;
+&lt;li&gt;成本優化：解決資源浪費問題。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;遷移策略&#34;&gt;遷移策略&lt;/h3&gt;
+&lt;p&gt;我有幸能主導這一項非常 Critical 的資料庫雲原生計畫，感恩主管給我這個機會。
+現在回頭看，覺得我當時的選擇很「笨」。但當時，團隊對於各種雲端功能還沒那麼高的掌握。我並不知道 Cloud SQL 其實支援 External Replica，可以把 Cloud SQL 設為 VM 的 Slave。&lt;/p&gt;
+&lt;p&gt;在我當時的認知裡，資料庫遷移的標準作業程序：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;停機&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;匯出&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;搬運&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;匯入&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;大功告成！&lt;/p&gt;
+&lt;h3 id=&#34;嚴密的規劃&#34;&gt;嚴密的規劃&lt;/h3&gt;
+&lt;p&gt;我們以較「笨」的方式執行，所以我更要確保每個執行步驟不能夠出錯。&lt;/p&gt;
+&lt;p&gt;我也做了 3 件事來確保 Migration 能順利執行：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;視覺化流程
+口頭討論流程容易有盲點，所以我用 PlantUML 畫出了時序圖，包含萬一出意外時的 Rollback Plan（當然是希望不要用到）。
+什麼時間點切斷？什麼時間點執行 Dump？如果驗證失敗，切回舊 VM 的順序是什麼？這些都在圖上定義清楚，確保團隊認知一致。&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

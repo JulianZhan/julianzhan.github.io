@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="light">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計 | Julian Zhan</title>
+<meta name="keywords" content="System Design, Distributed Transactions, TCC, Concurrency, Command Pattern, Locking">
+<meta name="description" content="1. 前言：一個「自動化回滾」的慘痛教訓
+在上一篇《系統韌性》中，我們談到了如何透過韌性機制讓系統在瞬間大流量中活下來。但活下來之後，我們面對的是更嚴苛的挑戰：資料正確性。
+這是一個真實發生的慘案，源自於我們一次「想讓系統更好」的架構決策。
+1.1 維運工具與自動化
+在一個舊的兌換系統中，面對外部發券服務偶發的失敗，我們原本依賴一個「維運工具」，定期撈出失敗名單進行人工補發。
+但團隊為了追求自動化，決定採用一個策略：
+
+「如果呼叫外部發券 API Timeout，系統就當下直接執行 Rollback，讓用戶可以立刻重試。」
+
+這個設計的出發點是善良的：我們不希望用戶因為網路不穩定，導致資格被卡住。
+而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。
+1.2 弄巧成拙：27 張優惠券的誕生
+然而，我們沒預期到的事，外部服務會一口氣 timeout 27次。
+當時的流程是 「同步直接兌換」：用戶點擊 &gt; 系統扣額度 &gt; 呼叫外部 API 發券。
+當外部 API 回應太慢至 Timeout 時：
+
+系統判定失敗 &gt; 釋放用戶額度。
+外部系統其實已發券成功。
+用戶發現還可以兌換，於是再次點擊。
+
+這個流程在短時間內重複了數十次。最終有位客戶領到了 27 張折價券。
+這是一個寶貴的經驗，我們低估了系統可能出錯的機率、時間長度和深度。我們以為用戶頂多多領到一張折價券，結果卻是27張。
+2. 架構進化：從「直接兌換」到「取得連結」
+在建構新的兌換服務時，我們改變了交易流程。
+我們不再「直接呼叫發貨」，而是改為 **「取得兌換連結」**模式。
+這個改變至關重要，它為我們創造了一個安全的 「緩衝區」，讓我們能安心地實作 TCC (Try-Confirm-Cancel)，在分散式交易下來確保交易的正確性。
+3. TCC 分散式交易模式
+我們將一筆兌換交易拆解為三個明確的階段：
+
+
+Try (資源預留 &amp; 取得連結)：
+
+鎖定資源：在資料庫中鎖定全域庫存與該用戶的可用額度。狀態設為 RESERVED。
+外部請求：取得結帳連結。
+
+關鍵防護： 為什麼改成「取得連結」就能防禦？
+如果這一步 Timeout，我們可以放心地執行 Cancel。因為只要用戶「沒拿到連結」，他就無法進行後續的兌換。就算外部系統真的生成了一個的購物車連結，只要連結沒送達用戶手上，這筆交易就實質失敗了。">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:56114/engineering/consistent-redemptions/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:56114/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://localhost:56114/engineering/consistent-redemptions/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript><link rel="stylesheet" href="/css/custom.css">
+
+</head>
+<body id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:56114/engineering/" title="Engineering">
+                    <span>Engineering</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/notes/" title="Notes">
+                    <span>Notes</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title entry-hint-parent">
+      打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計
+    </h1>
+    <div class="post-meta"><span title='2025-12-10 18:00:00 +0800 CST'>December 10, 2025</span>
+
+</div>
+  </header> 
+  <div class="post-content"><h3 id="1-前言一個自動化回滾的慘痛教訓">1. 前言：一個「自動化回滾」的慘痛教訓<a hidden class="anchor" aria-hidden="true" href="#1-前言一個自動化回滾的慘痛教訓">#</a></h3>
+<p>在上一篇《系統韌性》中，我們談到了如何透過韌性機制讓系統在瞬間大流量中活下來。但活下來之後，我們面對的是更嚴苛的挑戰：<strong>資料正確性</strong>。</p>
+<p>這是一個真實發生的慘案，源自於我們一次「想讓系統更好」的架構決策。</p>
+<h4 id="11-維運工具與自動化">1.1 維運工具與自動化<a hidden class="anchor" aria-hidden="true" href="#11-維運工具與自動化">#</a></h4>
+<p>在一個舊的兌換系統中，面對外部發券服務偶發的失敗，我們原本依賴一個「維運工具」，定期撈出失敗名單進行人工補發。
+但團隊為了追求自動化，決定採用一個策略：</p>
+<blockquote>
+<p><strong>「如果呼叫外部發券 API Timeout，系統就當下直接執行 Rollback，讓用戶可以立刻重試。」</strong></p>
+</blockquote>
+<p>這個設計的出發點是善良的：我們不希望用戶因為網路不穩定，導致資格被卡住。
+而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。</p>
+<h4 id="12-弄巧成拙27-張優惠券的誕生">1.2 弄巧成拙：27 張優惠券的誕生<a hidden class="anchor" aria-hidden="true" href="#12-弄巧成拙27-張優惠券的誕生">#</a></h4>
+<p>然而，我們沒預期到的事，外部服務會一口氣 timeout 27次。</p>
+<p>當時的流程是 <strong>「同步直接兌換」</strong>：用戶點擊 &gt; 系統扣額度 &gt; 呼叫外部 API 發券。
+當外部 API 回應太慢至 Timeout 時：</p>
+<ol>
+<li>系統判定失敗 &gt; <strong>釋放用戶額度</strong>。</li>
+<li>外部系統其實<strong>已發券成功</strong>。</li>
+<li>用戶發現還可以兌換，於是<strong>再次點擊</strong>。</li>
+</ol>
+<p>這個流程在短時間內重複了數十次。最終有位客戶<strong>領到了 27 張折價券。</strong></p>
+<p>這是一個寶貴的經驗，我們低估了系統可能出錯的機率、時間長度和深度。我們以為用戶頂多多領到一張折價券，結果卻是27張。</p>
+<h3 id="2-架構進化從直接兌換到取得連結">2. 架構進化：從「直接兌換」到「取得連結」<a hidden class="anchor" aria-hidden="true" href="#2-架構進化從直接兌換到取得連結">#</a></h3>
+<p>在建構新的兌換服務時，我們改變了<strong>交易流程</strong>。</p>
+<p>我們不再「直接呼叫發貨」，而是改為 **「取得兌換連結」**模式。
+這個改變至關重要，它為我們創造了一個安全的 <strong>「緩衝區」</strong>，讓我們能安心地實作 <strong>TCC (Try-Confirm-Cancel)</strong>，在分散式交易下來確保交易的正確性。</p>
+<h3 id="3-tcc-分散式交易模式">3. TCC 分散式交易模式<a hidden class="anchor" aria-hidden="true" href="#3-tcc-分散式交易模式">#</a></h3>
+<p>我們將一筆兌換交易拆解為三個明確的階段：</p>
+<ul>
+<li>
+<p><strong>Try (資源預留 &amp; 取得連結)</strong>：</p>
+<ol>
+<li><strong>鎖定資源</strong>：在資料庫中鎖定全域庫存與該用戶的可用額度。狀態設為 <code>RESERVED</code>。</li>
+<li><strong>外部請求</strong>：取得結帳連結。</li>
+</ol>
+<p><strong>關鍵防護：</strong> 為什麼改成「取得連結」就能防禦？
+如果這一步 Timeout，我們可以<strong>放心地執行 Cancel</strong>。因為只要用戶「沒拿到連結」，他就無法進行後續的兌換。就算外部系統真的生成了一個的購物車連結，只要連結沒送達用戶手上，這筆交易就實質失敗了。</p>
+</li>
+<li>
+<p><strong>Confirm (確認提交)</strong>：
+當用戶透過連結在外部完成結帳後，外部系統 Webhook 通知。此時我們才將狀態轉為 <code>CONFIRMED</code>，並正式扣除庫存。</p>
+</li>
+<li>
+<p><strong>Cancel (失敗補償)</strong>：
+如果在 Try 階段取得連結失敗，系統自動觸發 Cancel，執行<strong>補償交易</strong>將額度釋放回池子裡。</p>
+</li>
+</ul>
+<h3 id="4-command-pattern-實戰">4. Command Pattern 實戰<a hidden class="anchor" aria-hidden="true" href="#4-command-pattern-實戰">#</a></h3>
+<p>架構確立了，但實作上我們需要一個機制來管理這些步驟的回滾。
+一個兌換流程包含：<code>預扣庫存</code> &gt; <code>預扣個人額度</code> &gt; <code>取得外部連結</code>。</p>
+<p>為了避免寫出難以維護的程式碼，我引入了 <strong>Command Pattern</strong>。</p>
+<p>我們將每一個步驟封裝成獨立的 Command 物件，每個 Command 都必須實作兩個方法：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">interface</span> <span class="nc">Command</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">execute</span><span class="p">();</span><span class="w"> </span><span class="c1">// 正向：扣庫存 / 扣額度</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">undo</span><span class="p">();</span><span class="w">    </span><span class="c1">// 反向：補庫存 / 還額度</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span></code></pre></div><p>透過一個 <code>CommandOrchestrator</code> 來管理這些 Command 的 Stack。
+當「取得連結」失敗時，Orchestrator 會自動從 Stack 中依序彈出已完成的 Command 並執行 <code>undo()</code>。
+這不僅讓程式碼結構清晰，更確保了 <strong>「無論在哪一步失敗，庫存與額度都能乾淨地回到原點」。</strong></p>
+<h3 id="5-雙重鎖機制並發控制的最後防線">5. 雙重鎖機制：並發控制的最後防線<a hidden class="anchor" aria-hidden="true" href="#5-雙重鎖機制並發控制的最後防線">#</a></h3>
+<p>解決了流程控制，我們還得解決<strong>資料庫層級的 Race Condition</strong>，來防止超賣。
+在新系統中，我們設計了兩層鎖定機制：</p>
+<h4 id="51-全域庫存樂觀鎖-optimistic-lock">5.1 全域庫存：樂觀鎖 (Optimistic Lock)<a hidden class="anchor" aria-hidden="true" href="#51-全域庫存樂觀鎖-optimistic-lock">#</a></h4>
+<p>針對「限量 100 組」這種高併發搶購商品，我們採用 <strong>Version-based Optimistic Lock</strong>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-sql" data-lang="sql"><span class="line"><span class="cl"><span class="k">UPDATE</span><span class="w"> </span><span class="n">inventory</span><span class="w"> 
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">SET</span><span class="w"> </span><span class="k">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_version</span><span class="w">
+</span></span></span></code></pre></div><p>誰先更新 <code>version</code> 誰就贏。這讓系統能在大流量下保持高效能，同時精準控制總庫存不超賣。</p>
+<h4 id="52-個人額度悲觀鎖-pessimistic-lock">5.2 個人額度：悲觀鎖 (Pessimistic Lock)<a hidden class="anchor" aria-hidden="true" href="#52-個人額度悲觀鎖-pessimistic-lock">#</a></h4>
+<p>針對「每人限購 1 組」的限制，我們在檢查與預扣用戶額度時，使用了 <strong>Pessimistic Lock</strong> (<code>SELECT ... FOR UPDATE</code>)。</p>
+<p>這強制資料庫對該用戶的紀錄進行<strong>序列化 (Serialization)</strong> 處理——同一時間，同一個用戶只能有一筆交易。</p>
+<h3 id="6-韌性架構洋蔥式防禦">6. 韌性架構：洋蔥式防禦<a hidden class="anchor" aria-hidden="true" href="#6-韌性架構洋蔥式防禦">#</a></h3>
+<p>除了內部的鎖與交易模式，我們在外部也建立了一套 <strong>「洋蔥式」的防禦體系</strong>（詳見上一篇《系統韌性》）：</p>
+<p><img alt="洋蔥式韌性架構" loading="lazy" src="/images/engineering/onion_resilience.png">
+<img alt="韌性漏斗" loading="lazy" src="/images/engineering/resilience_funnel.png"></p>
+<h3 id="7-壓測驗證">7. 壓測驗證<a hidden class="anchor" aria-hidden="true" href="#7-壓測驗證">#</a></h3>
+<ul>
+<li>
+<p><strong>測試一：Flash Sale</strong></p>
+<ul>
+<li><strong>條件</strong>：500 個用戶同時搶購僅剩的 10 個商品</li>
+<li><strong>結果</strong>：<strong>10 筆成功，490 筆失敗</strong>。</li>
+</ul>
+</li>
+<li>
+<p><strong>測試二：Rapid Click</strong></p>
+<ul>
+<li><strong>條件</strong>：1 個用戶瞬間發送 30 次購買請求（個人限購 1 個）。</li>
+<li><strong>結果</strong>：<strong>1 筆成功，29 筆失敗</strong>。</li>
+</ul>
+</li>
+</ul>
+<h3 id="結語">結語<a hidden class="anchor" aria-hidden="true" href="#結語">#</a></h3>
+<p>從「舊系統的直接兌換」到「兌點中心的連結緩衝」，我學到最重要的一課是：<strong>架構設計決定了容錯的上限。</strong></p>
+<p>透過將同步交易改為 <strong>「取得連結 + TCC」</strong> 的非同步流程，我們創造了一個安全的失敗緩衝區；再配合 <strong>Command Pattern</strong> 與 <strong>嚴謹的鎖機制</strong>，我們成功建立了一個能精準控制庫存與額度的守門系統。</p>
+
+
+  </div>
+
+  <footer class="post-footer">
+    <ul class="post-tags">
+      <li><a href="http://localhost:56114/tags/system-design/">System Design</a></li>
+      <li><a href="http://localhost:56114/tags/distributed-transactions/">Distributed Transactions</a></li>
+      <li><a href="http://localhost:56114/tags/tcc/">TCC</a></li>
+      <li><a href="http://localhost:56114/tags/concurrency/">Concurrency</a></li>
+      <li><a href="http://localhost:56114/tags/command-pattern/">Command Pattern</a></li>
+      <li><a href="http://localhost:56114/tags/locking/">Locking</a></li>
+    </ul>
+  </footer>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerHTML = 'copy';
+
+        function copyingDone() {
+            copybutton.innerHTML = 'copied!';
+            setTimeout(() => {
+                copybutton.innerHTML = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+</body>
+
+</html>

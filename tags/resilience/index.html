@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="light">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Resilience | Julian Zhan</title>
+<meta name="keywords" content="">
+<meta name="description" content="">
+<meta name="author" content="">
+<link rel="canonical" href="http://localhost:56114/tags/resilience/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
+<link rel="icon" href="http://localhost:56114/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
+<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
+<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="http://localhost:56114/tags/resilience/index.xml" title="rss">
+<link rel="alternate" hreflang="en" href="http://localhost:56114/tags/resilience/">
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+</noscript><link rel="stylesheet" href="/css/custom.css">
+
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
+            <div class="logo-switches">
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="http://localhost:56114/engineering/" title="Engineering">
+                    <span>Engineering</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/notes/" title="Notes">
+                    <span>Notes</span>
+                </a>
+            </li>
+            <li>
+                <a href="http://localhost:56114/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<header class="page-header">
+  <h1>
+    Resilience
+  </h1>
+</header>
+
+<article class="post-entry tag-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">從連續故障到系統韌性：JDBC 連線與大流量衝擊
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>1. 系統崩潰的兩種形式 在維運高流量系統時，我們最害怕的往往不是寫出 Bug，而是面對那些「不可控」的因素。根據過去一年的經驗，我發現系統崩潰常來自兩個不可控因素：
+內憂：資料庫連線莫名卡死，服務崩潰。 外患：高峰流量瞬間衝垮第三方服務，導致連鎖效應，最終拖垮自己。 這篇文章將還原一次我們處理會員系統資料庫連線的完整排查過程，以及我們如何建立多層防禦機制，避免第三方系統拖垮自己。
+2. 內憂：不穩定的資料庫連線 某個週五晚上，我們的監控系統發出警報：會員系統的 Error Rate 飆升，大量的 API 請求噴出 GetConnectionTimeoutException。
+詭異的是：
+資料庫還活著：Cloud SQL 的 CPU 和 Memory 指標完全正常。 資料庫連線建不起來：監控顯示 Druid Connection Pool 的 active=0，但 creating=1，且 createElapseMillis 出現了已經累積數百萬毫秒。 這代表：應用程式試圖建立連線，但 TCP 層級既沒有成功，也沒有失敗，而是掉進了黑洞。
+2.1 第一階段：懷疑 Stale Connection 我們最初的懷疑點是網路架構中的 Connection Pool Timeout 不一致。 我們的架構是 App -&gt; HAProxy (Timeout 60s) -&gt; Cloud SQL。而 Druid Connection Pool 的 minEvictableIdleTimeMillis 預設是 5 分鐘。
+假設： HAProxy 已經砍掉了閒置連線，但 Druid 還以為這條連線是好的。當 Application 拿到這條「髒連線」時，就會發生異常。
+我們進行了第一波優化：
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2025-12-10 17:03:00 +0800 CST'>December 10, 2025</span></footer>
+  <a class="entry-link" aria-label="post link to 從連續故障到系統韌性：JDBC 連線與大流量衝擊" href="http://localhost:56114/engineering/system-resilience-practice/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+</body>
+
+</html>

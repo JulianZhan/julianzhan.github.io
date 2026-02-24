@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Engineering on</title><link>/engineering/</link><description>Recent content in Engineering on</description><generator>Hugo</generator><language>en</language><lastBuildDate>Wed, 10 Dec 2025 18:00:00 +0800</lastBuildDate><atom:link href="/engineering/index.xml" rel="self" type="application/rss+xml"/><item><title>打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計</title><link>/engineering/consistent-redemptions/</link><pubDate>Wed, 10 Dec 2025 18:00:00 +0800</pubDate><guid>/engineering/consistent-redemptions/</guid><description>&lt;h3 id="1-前言一個自動化回滾的慘痛教訓"&gt;1. 前言：一個「自動化回滾」的慘痛教訓&lt;/h3&gt;
+&lt;p&gt;在上一篇《系統韌性》中，我們談到了如何透過韌性機制讓系統在瞬間大流量中活下來。但活下來之後，我們面對的是更嚴苛的挑戰：&lt;strong&gt;資料正確性&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;這是一個真實發生的慘案，源自於我們一次「想讓系統更好」的架構決策。&lt;/p&gt;
+&lt;h4 id="11-維運工具與自動化"&gt;1.1 維運工具與自動化&lt;/h4&gt;
+&lt;p&gt;在一個舊的兌換系統中，面對外部發券服務偶發的失敗，我們原本依賴一個「維運工具」，定期撈出失敗名單進行人工補發。
+但團隊為了追求自動化，決定採用一個策略：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;「如果呼叫外部發券 API Timeout，系統就當下直接執行 Rollback，讓用戶可以立刻重試。」&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;這個設計的出發點是善良的：我們不希望用戶因為網路或系統不穩定，導致資格被卡住。
+而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。&lt;/p&gt;
+&lt;h4 id="12-弄巧成拙27-張優惠券的誕生"&gt;1.2 弄巧成拙：27 張優惠券的誕生&lt;/h4&gt;
+&lt;p&gt;然而，我們沒預期到的事，外部服務會一口氣 timeout 27次。&lt;/p&gt;
+&lt;p&gt;當時的流程是 &lt;strong&gt;「同步直接兌換」&lt;/strong&gt;：用戶點擊 &amp;gt; 系統扣額度 &amp;gt; 呼叫外部 API 發券。
+當外部 API 回應太慢至 Timeout 時：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;系統判定失敗 &amp;gt; &lt;strong&gt;釋放用戶額度&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;外部系統其實&lt;strong&gt;已發券成功&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;用戶發現還可以兌換，於是&lt;strong&gt;再次點擊&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;這個流程在短時間內重複了數十次。最終有位客戶&lt;strong&gt;領到了 27 張折價券。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;這是一個寶貴的經驗，我們低估了系統可能出錯的機率、時間長度和深度。我們以為用戶頂多多領到一張折價券，結果卻是27張。&lt;/p&gt;
+&lt;h3 id="2-另一套系統的啟示因限制而生的安全緩衝"&gt;2. 另一套系統的啟示：因「限制」而生的安全緩衝&lt;/h3&gt;
+&lt;p&gt;慘案後，我剛好需要開發一套全新的兌換系統。&lt;/p&gt;
+&lt;p&gt;這個新系統有一個硬性限制：由於對接的外部服務特性，我們無法像舊系統那樣由後端直接呼叫 API 發券，必須改為產生一組「兌換連結」，讓用戶自己跳轉去網頁完成領取。&lt;/p&gt;
+&lt;p&gt;起初，我們對這個限制感到相當無奈。因為在直覺上，這代表用戶體驗（UX）被犧牲。&lt;/p&gt;
+&lt;p&gt;但就在實作過程中，我才後知後覺地發現：這個「被迫」的限制，竟然解決我們先前兌換時遇到的難題。&lt;/p&gt;
+&lt;p&gt;舊系統（直接兌換）： 系統試圖同步完成所有事，一旦 Timeout 就陷入「狀態未明」。&lt;/p&gt;
+&lt;p&gt;新系統（取連結模式）： 因為做不到直接兌換，強制切開了「鎖定資格」與「實際領取」。&lt;/p&gt;
+&lt;p&gt;這個不得不為之的「連結跳轉」，無意間創造了一個 「緩衝區」。如果外部系統 Timeout，用戶頂多是沒拿到連結（交易停在 Try 階段），而永遠不可能發生「系統以為失敗，但外部其實發券了」的狀況。
+這個改變至關重要，它為我們創造了一個安全的 &lt;strong&gt;「緩衝區」&lt;/strong&gt;，讓我們能安心地實作 &lt;strong&gt;TCC (Try-Confirm-Cancel)&lt;/strong&gt;，在分散式交易下來確保交易的正確性。&lt;/p&gt;
+&lt;h3 id="3-tcc-分散式交易模式"&gt;3. TCC 分散式交易模式&lt;/h3&gt;
+&lt;p&gt;我們將一筆兌換交易拆解為三個明確的階段：&lt;/p&gt;</description></item><item><title>從連續故障到系統韌性：JDBC 連線與大流量衝擊</title><link>/engineering/system-resilience-practice/</link><pubDate>Wed, 10 Dec 2025 17:03:00 +0800</pubDate><guid>/engineering/system-resilience-practice/</guid><description>&lt;h3 id="1-系統崩潰的兩種形式"&gt;1. 系統崩潰的兩種形式&lt;/h3&gt;
+&lt;p&gt;在維運高流量系統時，我們最害怕的往往不是寫出 Bug，而是面對那些「不可控」的因素。根據過去一年的經驗，我發現系統崩潰常來自兩個不可控因素：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;內憂&lt;/strong&gt;：資料庫連線莫名卡死，服務崩潰。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;外患&lt;/strong&gt;：高峰流量瞬間衝垮第三方服務，導致連鎖效應，最終拖垮自己。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;這篇文章將還原一次我們處理會員系統資料庫連線的完整排查過程，以及我們如何建立多層防禦機制，避免第三方系統拖垮自己。&lt;/p&gt;
+&lt;h3 id="2-內憂不穩定的資料庫連線"&gt;2. 內憂：不穩定的資料庫連線&lt;/h3&gt;
+&lt;p&gt;某個週五晚上，我們的監控系統發出警報：會員系統的 Error Rate 飆升，大量的 API 請求噴出 &lt;code&gt;GetConnectionTimeoutException&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;詭異的是：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;資料庫還活著&lt;/strong&gt;：Cloud SQL 的 CPU 和 Memory 指標完全正常。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;資料庫連線建不起來&lt;/strong&gt;：監控顯示 Druid Connection Pool 的 &lt;code&gt;active=0&lt;/code&gt;，但 &lt;code&gt;creating=1&lt;/code&gt;，且 &lt;code&gt;createElapseMillis&lt;/code&gt; 出現了已經累積數百萬毫秒。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;這代表：&lt;strong&gt;應用程式試圖建立連線，但 TCP 層級既沒有成功，也沒有失敗，而是掉進了黑洞。&lt;/strong&gt;&lt;/p&gt;
+&lt;h4 id="21-第一階段懷疑-stale-connection"&gt;2.1 第一階段：懷疑 Stale Connection&lt;/h4&gt;
+&lt;p&gt;我們最初的懷疑點是&lt;strong&gt;網路架構中的 Connection Pool Timeout 不一致&lt;/strong&gt;。
+我們的架構是 &lt;code&gt;App -&amp;gt; HAProxy (Timeout 60s) -&amp;gt; Cloud SQL&lt;/code&gt;。而 Druid Connection Pool 的 &lt;code&gt;minEvictableIdleTimeMillis&lt;/code&gt; 預設是 5 分鐘。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;假設：&lt;/strong&gt; HAProxy 已經砍掉了閒置連線，但 Druid 還以為這條連線是好的。當 Application 拿到這條「髒連線」時，就會發生異常。&lt;/p&gt;
+&lt;p&gt;我們進行了第一波優化：&lt;/p&gt;</description></item><item><title>從 PHP 到 Java：100+ API 的「考古」與重構之旅</title><link>/engineering/php-to-java-migration/</link><pubDate>Tue, 09 Dec 2025 11:22:00 +0800</pubDate><guid>/engineering/php-to-java-migration/</guid><description>&lt;h3 id="legacy-系統的負擔"&gt;Legacy 系統的負擔&lt;/h3&gt;
+&lt;p&gt;這次想分享的挑戰，是要把外部廠商開發的 PHP Laravel 後端系統，接回內部營運。
+這套系統有 100 多支 API，開發時間很早，隨著時間推移，逐漸成為團隊的負擔&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;缺乏文件&lt;/strong&gt;：當初的商業邏輯不可考，程式碼是我們唯一能參考的文件。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;維護困難&lt;/strong&gt;：動態語言的特性加上開發時缺乏規範，出問題時也很難查詢。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;效能瓶頸&lt;/strong&gt;：資料庫查詢缺乏優化。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;認知負擔&lt;/strong&gt;：團隊主要使用 Java，維護這套系統是額外的認知負擔。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;為了精簡 Tech Stack，和近一步掌握這套 Legacy 系統，我們決定開始 API Migration：&lt;strong&gt;將 PHP Laravel 系統從 Kubernetes 重寫為 Java Spring Boot，並部署至 Cloud Run。&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id="遷移策略"&gt;遷移策略&lt;/h3&gt;
+&lt;p&gt;100+ 支 API，不可能一次做好再上線。&lt;/p&gt;
+&lt;p&gt;我們採取的是 &lt;strong&gt;「絞殺榕模式」&lt;/strong&gt;，漸進地取代舊系統。&lt;/p&gt;
+&lt;p&gt;我們的執行步驟大略如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;挑選目標&lt;/strong&gt;：從功能最獨立、風險最小的 API 開始。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;並行&lt;/strong&gt;：舊的 PHP 繼續跑，同時開發新的 Java 版本，舊 PHP 跑在原本的 K8s 上，新服務則部署到 Cloud Run。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;API 落地&lt;/strong&gt;：與 App 工程師配合，將新版 API 上線。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;持續監控&lt;/strong&gt;：觀察新 API 穩定後，才將舊 PHP 下線。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;這種「一隻一隻搬」的策略，過程拉得較長，但每一次 API Migration 的風險都較為可控。&lt;/p&gt;
+&lt;h3 id="code-is-the-only-documentation"&gt;Code is the only Documentation&lt;/h3&gt;
+&lt;p&gt;這次 Migration 最困難的是 &lt;strong&gt;「考古」&lt;/strong&gt;。
+因為沒有明確可靠的 Spec，我們必須讀懂原本 PHP 在做什麼，然後改寫成 Java。&lt;/p&gt;</description></item></channel></rss>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Communication on</title><link>/tags/communication/</link><description>Recent content in Communication on</description><generator>Hugo</generator><language>en</language><lastBuildDate>Fri, 05 Dec 2025 17:05:00 +0800</lastBuildDate><atom:link href="/tags/communication/index.xml" rel="self" type="application/rss+xml"/><item><title>溝通，Debug 那些程式碼之外的 Bug</title><link>/notes/communicate-to-debug/</link><pubDate>Fri, 05 Dec 2025 17:05:00 +0800</pubDate><guid>/notes/communicate-to-debug/</guid><description>&lt;p&gt;溝通這一項軟實力，我一直都知道很重要，但總覺得很抽象、捉摸不定，很難去培養，以及體會。
+然而隨著經驗的累積，我有幸有些具體的經驗，使我能體會到，「溝通」如何影響我們的工作以及產品。&lt;/p&gt;
+&lt;p&gt;特別是在與外部廠商協作時，我發現許多問題的Root Cause 並不是技術，而是資訊落差。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;先別急著批評，保持客觀、誠摯，合作去解決問題&lt;/strong&gt;，這是我常常秉持的心態，這是我的信念，是我的優點。&lt;/p&gt;
+&lt;p&gt;也讓我有兩次成功與外包商溝通的經驗。&lt;/p&gt;
+&lt;h3 id="那些感覺我很爛的時刻"&gt;那些「感覺我很爛」的時刻&lt;/h3&gt;
+&lt;p&gt;不過我也想先說，這個優點其實是&lt;strong&gt;一體兩面&lt;/strong&gt;的。&lt;/p&gt;
+&lt;p&gt;因為想著「不急著批評」，當問題發生時，我的反應往往沒那麼快。當有人質疑這個問題是我造成時，我沒辦法，也不習慣，快速地反應。我習慣先檢查看看自己的系統和邏輯，確認無誤後，再給出明確的回覆。&lt;/p&gt;
+&lt;p&gt;這聽起來很理想，但在那個當下其實很難熬。
+每當經歷這種時刻，大家手指指來指去，沈默的時間總讓我覺得，別人是不是認爲我「心虛」。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;在這個時刻，心裡很不好受，啞巴吃黃連的感覺。&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;所以我也說這算是一體兩面的吧！是優點，但也是讓人難受的缺點。&lt;/p&gt;
+&lt;h3 id="case-1慢到無法忍受的-api"&gt;Case 1：慢到無法忍受的 API&lt;/h3&gt;
+&lt;p&gt;第一個案例是關於系統效能。
+在某次與外包商合作的系統中，我們發現外包商的兌換 API 的回應時間長達 2 秒以上。&lt;/p&gt;
+&lt;p&gt;根據過往合作經驗，大家習慣性認為，「外包商技術就是差」。當然我也能理解，這是慣性，批評很容易，而且批評別人寫爛 Code 很爽，還能再呈現出一些自己技術上的優越感。&lt;/p&gt;
+&lt;p&gt;但在我心中，我是真的納悶，為什麼 API 能那麼慢，我是抱著認真疑惑並且想解決的態度詢問，速度能不能在優化。&lt;/p&gt;
+&lt;p&gt;當然，這個過程需要來回幾次溝通，對方會說：「我們這裡觀察到速度都很快」
+而我會再提供些數據和再進一步追問細節，像是：「從我們這裡的 Log 來看，每個步驟的速度是這樣&amp;hellip;，你們 API 確實回應超過2秒&amp;hellip;」
+「還是你們能提供每個步驟所花費的時間整理，像這樣的範例&amp;hellip;」&lt;/p&gt;
+&lt;p&gt;在釐清流程後，發現廠商串接我們內部的 Legacy 系統，取會員資料時被拖慢了速度。&lt;/p&gt;
+&lt;p&gt;理清楚真正的效能瓶頸後，我發現&lt;strong&gt;這是資訊落差的問題&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;我們內部其實有一個新的、快取過的輕量會員資訊，回應只需 50ms，但&lt;strong&gt;從來沒有人告訴廠商這個資訊&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;於是我請廠商修改使用輕量會員資訊 API ，回應時間瞬間降到 200ms 以下。我們沒改任何系統架構，只是彌平資訊的落差。&lt;/p&gt;
+&lt;h3 id="case-2清晰的流程圖勝過千言萬語"&gt;Case 2：清晰的流程圖勝過千言萬語&lt;/h3&gt;
+&lt;p&gt;第二個案例是關於「既有成見」。&lt;/p&gt;
+&lt;p&gt;當時長官希望能提升 UI/UX 體驗，要求將原本「外開」的兌換頁面，改為 App 內的「內嵌」。&lt;/p&gt;
+&lt;p&gt;這個需求一下來，馬上在團隊內部遇到阻力。資深成員說：「&lt;strong&gt;那個廠商以前說過架構限制，只能外開，內嵌會有問題，做不到。&lt;/strong&gt;」&lt;/p&gt;
+&lt;p&gt;「以前說過不行」是一個很強大的阻礙。我們最初會規劃成外開，其實就是因為我們之前的經驗，認為該兌換頁面就只能夠外開。&lt;/p&gt;
+&lt;p&gt;但既然收到了提升體驗的指令，我們就盡力去解決它。&lt;/p&gt;
+&lt;p&gt;不過身為後端工程師，我對 App 端如何處理 WebView 並不清楚。於是我先去請教我們的 App 工程師：「假設廠商功能正常，如果我們想做內嵌，需要什麼？」&lt;/p&gt;
+&lt;p&gt;這是 App 工程師的專業，在他們的解釋下，我們才理出了解決方向。但我還是很擔心，即便我懂了，該怎麼跟廠商溝通才不會雞同鴨講？&lt;/p&gt;
+&lt;p&gt;剛好，那幾天我看到了一句話：「最高效的溝通，就是直接把流程圖畫出來。」沒有模糊空間，大家理解才會一致。&lt;/p&gt;
+&lt;p&gt;於是我直接打開 PlantUML，畫一張時序圖，明確定義了：&lt;/p&gt;</description></item></channel></rss>

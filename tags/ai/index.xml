@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AI on</title><link>/tags/ai/</link><description>Recent content in AI on</description><generator>Hugo</generator><language>en</language><lastBuildDate>Sat, 29 Nov 2025 14:54:00 +0800</lastBuildDate><atom:link href="/tags/ai/index.xml" rel="self" type="application/rss+xml"/><item><title>先寫 Spec，再讓 AI 寫程式</title><link>/notes/how-i-use-ai-spec-first/</link><pubDate>Sat, 29 Nov 2025 14:54:00 +0800</pubDate><guid>/notes/how-i-use-ai-spec-first/</guid><description>&lt;p&gt;AI出來已經3年，對軟體業的衝擊是不得不面對的挑戰。而且我認為 AI is real，AI並不會曇花一現、消失、死去，而會變成像是網路、搜尋引擎、手機、電腦這類科技產品，幾乎算是民生必需品了。&lt;/p&gt;
+&lt;p&gt;還記得大學時接觸的NLP模型，只能簡短地寫故事，像是「今天天氣好，小明&amp;hellip;」。可以作為娛樂，但要實際在工作上有幫助差距尚遠。&lt;/p&gt;
+&lt;p&gt;然而，2022年底，Chat GPT剛問世，發現這東西顛覆了我對NLP模型的認知。GPT可以回答出很多艱澀的問題，我引以為豪的統計知識，GPT也都能侃侃而談，給出很多精準、有價值的建議。&lt;/p&gt;
+&lt;p&gt;從一開始的複製「Code到IDE」，而再到更深度的整合 Copilot &amp;amp; Claude Code，我認為AI已經徹底融入軟體工程師的每個環節，我們必須學習如何擁抱AI，藉由AI讓自己生產力提高，而不是與之背道而行。&lt;/p&gt;
+&lt;p&gt;也能更誇張一點的說，工程師的工作內容從「如何寫出 Code」轉變成了「如何藉由 AI產出 Code並且駕馭它」。而我想分享的方法「先寫 Spec，再讓 AI 寫程式」，則是我在工作中，發現和 AI互動很高效的方式。&lt;/p&gt;
+&lt;h3 id="這次經驗中我為-ai-準備了什麼"&gt;這次經驗中，我為 AI 準備了什麼？&lt;/h3&gt;
+&lt;p&gt;在一次專案實戰中，由於涉及比較複雜的訂單與庫存邏輯，一時半載其實我也還沒理清楚所有邏輯，我意識到如果直接請 AI實作，AI 肯定會的一團糟，邏輯凌亂又分散。
+所以這一次，我反而沒有急著寫 Code，而是試著先準備好以下四樣東西，當作給 AI 的「施工圖」：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;API Interface：我先定義好給 Client 端串接的 Input &amp;amp; Output，確保前後端的契約一致，也讓前端儘早開工。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;State Machine：訂單狀態的流轉邏輯（例如：從 Reserved 到 Pending 再到 Confirmed），我先把規則定清楚，確保邏輯一致，不讓 AI 自由發揮，也確保訂單維持在我們可控的狀態下轉換。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Database Schema：我先設計好 Schema，包含控庫存、檔期、訂單狀態的資料表。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;PlantUML 流程圖：最後，我畫出了 Sequence Diagram，確認系統各個整個訂單執行的時序。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id="先寫spec為什麼更好"&gt;先寫Spec，為什麼更好？&lt;/h3&gt;
+&lt;p&gt;如果直接叫 AI「寫一個控庫存、防止超賣的功能」，它只會給出最簡單的Happy Flow邏輯。但在實際應用中，我們要處理併發、要處理 Rollback、以及各種可能發生的異常狀況，目前的 AI 很難一步到位，考量到這麼精細、異常的控制。&lt;/p&gt;
+&lt;p&gt;一步一步寫出Spec，接下來再引導 AI 實作，讓 AI 在需要精細控制的地方能表現更好。&lt;/p&gt;
+&lt;h3 id="從工匠到建築師"&gt;從工匠到建築師&lt;/h3&gt;
+&lt;p&gt;這種先寫 Spec的方式，是我第一次切身感到和 AI 開發的魅力，感到 AI 已經徹底改變軟體開發的方式，讓我感覺更像一名&lt;strong&gt;建築師&lt;/strong&gt;、監督者、規劃者。&lt;/p&gt;</description></item></channel></rss>

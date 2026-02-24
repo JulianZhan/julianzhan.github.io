@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Php on</title><link>/tags/php/</link><description>Recent content in Php on</description><generator>Hugo</generator><language>en</language><lastBuildDate>Tue, 09 Dec 2025 11:22:00 +0800</lastBuildDate><atom:link href="/tags/php/index.xml" rel="self" type="application/rss+xml"/><item><title>從 PHP 到 Java：100+ API 的「考古」與重構之旅</title><link>/engineering/php-to-java-migration/</link><pubDate>Tue, 09 Dec 2025 11:22:00 +0800</pubDate><guid>/engineering/php-to-java-migration/</guid><description>&lt;h3 id="legacy-系統的負擔"&gt;Legacy 系統的負擔&lt;/h3&gt;
+&lt;p&gt;這次想分享的挑戰，是要把外部廠商開發的 PHP Laravel 後端系統，接回內部營運。
+這套系統有 100 多支 API，開發時間很早，隨著時間推移，逐漸成為團隊的負擔&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;缺乏文件&lt;/strong&gt;：當初的商業邏輯不可考，程式碼是我們唯一能參考的文件。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;維護困難&lt;/strong&gt;：動態語言的特性加上開發時缺乏規範，出問題時也很難查詢。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;效能瓶頸&lt;/strong&gt;：資料庫查詢缺乏優化。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;認知負擔&lt;/strong&gt;：團隊主要使用 Java，維護這套系統是額外的認知負擔。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;為了精簡 Tech Stack，和近一步掌握這套 Legacy 系統，我們決定開始 API Migration：&lt;strong&gt;將 PHP Laravel 系統從 Kubernetes 重寫為 Java Spring Boot，並部署至 Cloud Run。&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id="遷移策略"&gt;遷移策略&lt;/h3&gt;
+&lt;p&gt;100+ 支 API，不可能一次做好再上線。&lt;/p&gt;
+&lt;p&gt;我們採取的是 &lt;strong&gt;「絞殺榕模式」&lt;/strong&gt;，漸進地取代舊系統。&lt;/p&gt;
+&lt;p&gt;我們的執行步驟大略如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;挑選目標&lt;/strong&gt;：從功能最獨立、風險最小的 API 開始。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;並行&lt;/strong&gt;：舊的 PHP 繼續跑，同時開發新的 Java 版本，舊 PHP 跑在原本的 K8s 上，新服務則部署到 Cloud Run。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;API 落地&lt;/strong&gt;：與 App 工程師配合，將新版 API 上線。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;持續監控&lt;/strong&gt;：觀察新 API 穩定後，才將舊 PHP 下線。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;這種「一隻一隻搬」的策略，過程拉得較長，但每一次 API Migration 的風險都較為可控。&lt;/p&gt;
+&lt;h3 id="code-is-the-only-documentation"&gt;Code is the only Documentation&lt;/h3&gt;
+&lt;p&gt;這次 Migration 最困難的是 &lt;strong&gt;「考古」&lt;/strong&gt;。
+因為沒有明確可靠的 Spec，我們必須讀懂原本 PHP 在做什麼，然後改寫成 Java。&lt;/p&gt;</description></item></channel></rss>

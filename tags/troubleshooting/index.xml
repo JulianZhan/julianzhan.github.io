@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Troubleshooting on</title><link>/tags/troubleshooting/</link><description>Recent content in Troubleshooting on</description><generator>Hugo</generator><language>en</language><lastBuildDate>Wed, 10 Dec 2025 17:03:00 +0800</lastBuildDate><atom:link href="/tags/troubleshooting/index.xml" rel="self" type="application/rss+xml"/><item><title>從連續故障到系統韌性：JDBC 連線與大流量衝擊</title><link>/engineering/system-resilience-practice/</link><pubDate>Wed, 10 Dec 2025 17:03:00 +0800</pubDate><guid>/engineering/system-resilience-practice/</guid><description>&lt;h3 id="1-系統崩潰的兩種形式"&gt;1. 系統崩潰的兩種形式&lt;/h3&gt;
+&lt;p&gt;在維運高流量系統時，我們最害怕的往往不是寫出 Bug，而是面對那些「不可控」的因素。根據過去一年的經驗，我發現系統崩潰常來自兩個不可控因素：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;內憂&lt;/strong&gt;：資料庫連線莫名卡死，服務崩潰。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;外患&lt;/strong&gt;：高峰流量瞬間衝垮第三方服務，導致連鎖效應，最終拖垮自己。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;這篇文章將還原一次我們處理會員系統資料庫連線的完整排查過程，以及我們如何建立多層防禦機制，避免第三方系統拖垮自己。&lt;/p&gt;
+&lt;h3 id="2-內憂不穩定的資料庫連線"&gt;2. 內憂：不穩定的資料庫連線&lt;/h3&gt;
+&lt;p&gt;某個週五晚上，我們的監控系統發出警報：會員系統的 Error Rate 飆升，大量的 API 請求噴出 &lt;code&gt;GetConnectionTimeoutException&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;詭異的是：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;資料庫還活著&lt;/strong&gt;：Cloud SQL 的 CPU 和 Memory 指標完全正常。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;資料庫連線建不起來&lt;/strong&gt;：監控顯示 Druid Connection Pool 的 &lt;code&gt;active=0&lt;/code&gt;，但 &lt;code&gt;creating=1&lt;/code&gt;，且 &lt;code&gt;createElapseMillis&lt;/code&gt; 出現了已經累積數百萬毫秒。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;這代表：&lt;strong&gt;應用程式試圖建立連線，但 TCP 層級既沒有成功，也沒有失敗，而是掉進了黑洞。&lt;/strong&gt;&lt;/p&gt;
+&lt;h4 id="21-第一階段懷疑-stale-connection"&gt;2.1 第一階段：懷疑 Stale Connection&lt;/h4&gt;
+&lt;p&gt;我們最初的懷疑點是&lt;strong&gt;網路架構中的 Connection Pool Timeout 不一致&lt;/strong&gt;。
+我們的架構是 &lt;code&gt;App -&amp;gt; HAProxy (Timeout 60s) -&amp;gt; Cloud SQL&lt;/code&gt;。而 Druid Connection Pool 的 &lt;code&gt;minEvictableIdleTimeMillis&lt;/code&gt; 預設是 5 分鐘。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;假設：&lt;/strong&gt; HAProxy 已經砍掉了閒置連線，但 Druid 還以為這條連線是好的。當 Application 拿到這條「髒連線」時，就會發生異常。&lt;/p&gt;
+&lt;p&gt;我們進行了第一波優化：&lt;/p&gt;</description></item></channel></rss>

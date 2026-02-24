@@ -1,0 +1,247 @@
+/* Professional but Approachable - Custom Styles */
+
+:root {
+    --accent-color: #3b82f6;  /* Soft professional blue */
+    --accent-hover: #2563eb;
+    --warm-bg: #fafafa;
+    --subtle-border: #e5e7eb;
+    --text-color: #1f2937;
+    --text-secondary: #6b7280;
+}
+
+/* Warmer background */
+body {
+    background-color: var(--warm-bg);
+}
+
+.main {
+    background-color: white;
+}
+
+/* Profile image - square/cube - override theme */
+.profile img {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    width: 250px !important;
+    height: 250px !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+/* Profile mode styling - more breathing room */
+.profile {
+    padding: 3rem 1rem;
+}
+
+.profile .profile_inner h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.profile .profile_inner h2 {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* Buttons - rounded and friendly */
+.profile .buttons,
+.profile .button {
+    border-radius: 8px;
+}
+
+.profile .button {
+    background-color: white;
+    border: 2px solid var(--subtle-border);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.profile .button:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
+}
+
+/* Social icons - more visible and friendly */
+.social-icons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.social-icons a {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+.social-icons a:hover {
+    color: var(--accent-color) !important;
+    transform: translateY(-2px);
+}
+
+/* Links - warm accent color */
+.post-entry a,
+.post-content a,
+.entry-content a {
+    color: var(--accent-color);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.post-entry a:hover,
+.post-content a:hover,
+.entry-content a:hover {
+    border-bottom-color: var(--accent-color);
+}
+
+/* Post cards - softer with subtle shadows */
+.post-entry {
+    border-radius: 12px;
+    border: 1px solid var(--subtle-border);
+    transition: all 0.3s ease;
+    background-color: white;
+}
+
+.post-entry:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+    border-color: var(--accent-color);
+}
+
+/* Header - cleaner spacing */
+.nav {
+    padding: 1.5rem 0;
+}
+
+.nav a {
+    transition: color 0.2s ease;
+}
+
+.nav a:hover {
+    color: var(--accent-color) !important;
+}
+
+/* Code blocks - warmer styling */
+code {
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+pre code {
+    border-radius: 8px;
+}
+
+/* Main content - better spacing */
+.main {
+    padding: 2rem 1rem;
+}
+
+.post-content,
+.page-content {
+    line-height: 1.7;
+}
+
+/* Headers - friendlier hierarchy */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-color);
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+}
+
+/* Footer - subtle and warm */
+footer {
+    border-top: 1px solid var(--subtle-border);
+    padding: 2rem 0;
+    color: var(--text-secondary);
+}
+
+/* Reading time and metadata */
+.post-meta {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Smooth transitions everywhere */
+* {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 0.2s;
+    transition-timing-function: ease;
+}
+
+/* Better focus states for accessibility */
+a:focus,
+button:focus {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+/* Reduce spacing between home-info and articles */
+.first-entry.home-info {
+    min-height: auto !important;
+    margin: 0 !important;
+    padding-bottom: 1rem !important;
+}
+
+.first-entry.home-info .entry-footer {
+    display: none;
+}
+
+.first-entry.home-info .entry-content {
+    margin-bottom: 0;
+}
+
+/* About page styling */
+.about-header {
+    text-align: center;
+    margin: 2rem 0 3rem 0;
+}
+
+.about-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-bottom: 1rem;
+    border: none !important;
+}
+
+.about-intro p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+/* Mobile responsiveness - extra padding */
+@media (max-width: 768px) {
+    .profile {
+        padding: 2rem 1rem;
+    }
+
+    .profile .profile_inner h1 {
+        font-size: 1.75rem;
+    }
+
+    .about-image {
+        width: 150px;
+        height: 150px;
+    }
+}
