@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto" data-theme="light">
 
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="noindex, nofollow">
-<title>Notes | Julian Zhan</title>
+<meta name="robots" content="index, follow">
+<title>Notes | </title>
 <meta name="keywords" content="">
 <meta name="description" content="Short observations. Patterns noticed. Things worth remembering.">
-<meta name="author" content="">
-<link rel="canonical" href="http://localhost:56114/notes/">
+<meta name="author" content="Julian Zhan">
+<link rel="canonical" href="/notes/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:56114/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
-<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="mask-icon" href="/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" type="application/rss+xml" href="http://localhost:56114/notes/index.xml" title="rss">
-<link rel="alternate" hreflang="en" href="http://localhost:56114/notes/">
+<link rel="alternate" type="application/rss+xml" href="/notes/index.xml" title="rss">
+<link rel="alternate" hreflang="en" href="/notes/">
 <noscript>
     <style>
         #theme-toggle,
@@ -29,29 +29,51 @@
 
     </style>
 </noscript><link rel="stylesheet" href="/css/custom.css">
+<meta property="og:url" content="/notes/">
+  <meta property="og:title" content="Notes">
+  <meta property="og:description" content="Short observations. Patterns noticed. Things worth remembering.">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Notes">
+<meta name="twitter:description" content="">
 
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Notes",
+      "item": "/notes/"
+    }
+  ]
+}
+</script>
 </head>
 <body class="list" id="top">
     <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
             <div class="logo-switches">
             </div>
         </div>
         <ul id="menu">
             <li>
-                <a href="http://localhost:56114/engineering/" title="Engineering">
+                <a href="/engineering/" title="Engineering">
                     <span>Engineering</span>
                 </a>
             </li>
             <li>
-                <a href="http://localhost:56114/notes/" title="Notes">
+                <a href="/notes/" title="Notes">
                     <span class="active">Notes</span>
                 </a>
             </li>
             <li>
-                <a href="http://localhost:56114/about/" title="About">
+                <a href="/about/" title="About">
                     <span>About</span>
                 </a>
             </li>
@@ -85,7 +107,7 @@
 在這個時刻，心裡很不好受，啞巴吃黃連的感覺。
 所以我也說這算是一體兩面的吧！是優點，但也是讓人難受的缺點。
 Case 1：慢到無法忍受的 API 第一個案例是關於系統效能。 在某次與外包商合作的系統中，我們發現外包商的兌換 API 的回應時間長達 2 秒以上。
-根據過往合作經驗，大家習慣性認為，「外包商技術就是差」、「寫這什麼爛 Code」。當然我也能理解，這是慣性，批評很容易，而且批評別人寫爛 Code 很爽，還能再呈現出一些自己技術上的優越感。
+根據過往合作經驗，大家習慣性認為，「外包商技術就是差」。當然我也能理解，這是慣性，批評很容易，而且批評別人寫爛 Code 很爽，還能再呈現出一些自己技術上的優越感。
 但在我心中，我是真的納悶，為什麼 API 能那麼慢，我是抱著認真疑惑並且想解決的態度詢問，速度能不能在優化。
 當然，這個過程需要來回幾次溝通，對方會說：「我們這裡觀察到速度都很快」 而我會再提供些數據和再進一步追問細節，像是：「從我們這裡的 Log 來看，每個步驟的速度是這樣…，你們 API 確實回應超過2秒…」 「還是你們能提供每個步驟所花費的時間整理，像這樣的範例…」
 在釐清流程後，發現廠商串接我們內部的 Legacy 系統，取會員資料時被拖慢了速度。
@@ -100,10 +122,11 @@ Case 2：清晰的流程圖勝過千言萬語 第二個案例是關於「既有�
 不過身為後端工程師，我對 App 端如何處理 WebView 並不清楚。於是我先去請教我們的 App 工程師：「假設廠商功能正常，如果我們想做內嵌，需要什麼？」
 這是 App 工程師的專業，在他們的解釋下，我們才理出了解決方向。但我還是很擔心，即便我懂了，該怎麼跟廠商溝通才不會雞同鴨講？
 剛好，那幾天我看到了一句話：「最高效的溝通，就是直接把流程圖畫出來。」沒有模糊空間，大家理解才會一致。
+於是我直接打開 PlantUML，畫一張時序圖，明確定義了：
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-12-05 17:05:00 +0800 CST'>December 5, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 溝通，Debug 那些程式碼之外的 Bug" href="http://localhost:56114/notes/communicate-to-debug/"></a>
+  <footer class="entry-footer"><span title='2025-12-05 17:05:00 +0800 CST'>December 5, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span></footer>
+  <a class="entry-link" aria-label="post link to 溝通，Debug 那些程式碼之外的 Bug" href="/notes/communicate-to-debug/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -127,8 +150,8 @@ PlantUML 流程圖：最後，我畫出了 Sequence Diagram，確認系統各個
 從工匠到建築師 這種先寫 Spec的方式，是我第一次切身感到和 AI 開發的魅力，感到 AI 已經徹底改變軟體開發的方式，讓我感覺更像一名建築師、監督者、規劃者。
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-11-29 14:54:00 +0800 CST'>November 29, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 先寫 Spec，再讓 AI 寫程式" href="http://localhost:56114/notes/how-i-use-ai-spec-first/"></a>
+  <footer class="entry-footer"><span title='2025-11-29 14:54:00 +0800 CST'>November 29, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span></footer>
+  <a class="entry-link" aria-label="post link to 先寫 Spec，再讓 AI 寫程式" href="/notes/how-i-use-ai-spec-first/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -156,13 +179,13 @@ PlantUML 流程圖：最後，我畫出了 Sequence Diagram，確認系統各個
 挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-11-28 17:05:00 +0800 CST'>November 28, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 從 Jupyter Notebook 到 Production Code" href="http://localhost:56114/notes/statistics-to-software/"></a>
+  <footer class="entry-footer"><span title='2025-11-28 17:05:00 +0800 CST'>November 28, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span></footer>
+  <a class="entry-link" aria-label="post link to 從 Jupyter Notebook 到 Production Code" href="/notes/statistics-to-software/"></a>
 </article>
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+        <span>&copy; 2026 <a href="/"></a></span> · 
 
     <span>
         Powered by

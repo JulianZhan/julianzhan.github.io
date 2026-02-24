@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto" data-theme="light">
 
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="noindex, nofollow">
-<title>從 Jupyter Notebook 到 Production Code | Julian Zhan</title>
+<meta name="robots" content="index, follow">
+<title>從 Jupyter Notebook 到 Production Code | </title>
 <meta name="keywords" content="statistics, career, software-engineering">
 <meta name="description" content="我大學念的是統計，畢業後先擔任Data Scientist，後來再轉職成為軟體工程師。
 身為一個統計出身的人，這不只是技術上的變化，也是心態以及文化上的轉變。
@@ -30,17 +30,17 @@
 適應工程師的嚴謹是一個漫長的文化和心態的轉變。但回過頭看，過去的統計背景並沒有白費，反而帶來了些優勢。
 挑軟一點的能力說，我更擅長數據思維。在做系統監控時，更能理解 P95、P99 與平均值之間的差異與意義。
 挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。">
-<meta name="author" content="">
-<link rel="canonical" href="http://localhost:56114/notes/statistics-to-software/">
+<meta name="author" content="Julian Zhan">
+<link rel="canonical" href="/notes/statistics-to-software/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:56114/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
-<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="mask-icon" href="/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" hreflang="en" href="http://localhost:56114/notes/statistics-to-software/">
+<link rel="alternate" hreflang="en" href="/notes/statistics-to-software/">
 <noscript>
     <style>
         #theme-toggle,
@@ -50,29 +50,134 @@
 
     </style>
 </noscript><link rel="stylesheet" href="/css/custom.css">
+<meta property="og:url" content="/notes/statistics-to-software/">
+  <meta property="og:title" content="從 Jupyter Notebook 到 Production Code">
+  <meta property="og:description" content="我大學念的是統計，畢業後先擔任Data Scientist，後來再轉職成為軟體工程師。 身為一個統計出身的人，這不只是技術上的變化，也是心態以及文化上的轉變。
+以前在寫 Python，用 Notebook 時，我總感覺自己像是在實驗室裡，目標是挖掘這些數據背後的資訊。我要的是圖表、是 Insight、是一個準確的模型。變數名稱叫 df1 或 tmp 沒關係，程式碼寫得髒一點也無所謂，因為模型建完了、報告交出去時，這一個 Notebook 所累積的段程式碼的任務就結束了。
+當時的我，並不真正理解什麼是「維護」，對於將程式碼部署到「Production 環境」意味著什麼，概念也相當模糊。
+直到當我轉向後端開發，開始接觸到企業系統時，我才漸漸摸清楚軟體工程是怎麼樣的一個建造過程。不再像是在實驗室，而是更貼近地氣的真槍實彈。
+我相信每個統計人，都會經歷相似的心態轉換。
+時間維度：當下 vs. 未來 在 Notebook 裡，我們關注的是「當下」。 只要現在 Cell 是綠色的，圖表是對的，那就夠了。前面定義的變數，後面隨時都能用。這種開發模式非常靈活，有點雜亂，但是超方便。
+但在 Production Code 裡，我們變得必須要關注「未來」。 我寫下的每一行 Code，三個月後，接手的同事能不能看懂？這個 Class 這樣設計，隨著邏輯和業務量增加會不會變越來越難維護？
+從這裡開始，我的程式碼生命週期不再是局限於一個 Notebook，而是需要持續、不間斷的、在可預期的未來內，持續服務。
+交付形式的轉變：從「手動執行」到「應用落地」 這種工程思維的轉變，讓我感覺更為扎實。
+之前在用 Notebook 時，我常常思考：「我這樣的模型，要怎麼真的應用？」 當時，每次預測都得由我打開 Notebook 手動執行一次，這聽起來很不實際，也很難規模化。我認為有更好的方式，但以我當時的知識，又找不到更好的解答。
+直到我接觸了軟體工程，才真正明白如何將一個模型、邏輯包裝成應用服務。這種「把應用落地」的能力，補足了我過去身為 Data Scientist 時，「總感覺像是在實驗室」的拼圖。
+反饋機制的改變 習慣用 Jupyter，最依賴的就是 REPL 的即時反饋，我白話為「隨時都需要Print」。寫一行、跑一行、看一下結果，不對就改。當時的我，認為邊寫邊 Print 好像有點怪怪的，但又無法脫離。
+轉到軟體工程後，修改邏輯、編譯、部署、打 API、看 Log，這個反饋的時間變長了。不像 REPL 能及時給我反饋。
+這使我必須先想清楚資料流怎麼跑、例外怎麼處理。Java 也幫助我很多，強型態的語言，讓我在理解資料流的轉換時也更加清晰。
+統計背景為我帶來的 適應工程師的嚴謹是一個漫長的文化和心態的轉變。但回過頭看，過去的統計背景並沒有白費，反而帶來了些優勢。
+挑軟一點的能力說，我更擅長數據思維。在做系統監控時，更能理解 P95、P99 與平均值之間的差異與意義。
+挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="notes">
+    <meta property="article:published_time" content="2025-11-28T17:05:00+08:00">
+    <meta property="article:modified_time" content="2025-11-28T17:05:00+08:00">
+    <meta property="article:tag" content="Statistics">
+    <meta property="article:tag" content="Career">
+    <meta property="article:tag" content="Software-Engineering">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="從 Jupyter Notebook 到 Production Code">
+<meta name="twitter:description" content="我大學念的是統計，畢業後先擔任Data Scientist，後來再轉職成為軟體工程師。
+身為一個統計出身的人，這不只是技術上的變化，也是心態以及文化上的轉變。
+以前在寫 Python，用 Notebook 時，我總感覺自己像是在實驗室裡，目標是挖掘這些數據背後的資訊。我要的是圖表、是 Insight、是一個準確的模型。變數名稱叫 df1 或 tmp 沒關係，程式碼寫得髒一點也無所謂，因為模型建完了、報告交出去時，這一個 Notebook 所累積的段程式碼的任務就結束了。
+當時的我，並不真正理解什麼是「維護」，對於將程式碼部署到「Production 環境」意味著什麼，概念也相當模糊。
+直到當我轉向後端開發，開始接觸到企業系統時，我才漸漸摸清楚軟體工程是怎麼樣的一個建造過程。不再像是在實驗室，而是更貼近地氣的真槍實彈。
+我相信每個統計人，都會經歷相似的心態轉換。
+時間維度：當下 vs. 未來
+在 Notebook 裡，我們關注的是「當下」。 只要現在 Cell 是綠色的，圖表是對的，那就夠了。前面定義的變數，後面隨時都能用。這種開發模式非常靈活，有點雜亂，但是超方便。
+但在 Production Code 裡，我們變得必須要關注「未來」。 我寫下的每一行 Code，三個月後，接手的同事能不能看懂？這個 Class 這樣設計，隨著邏輯和業務量增加會不會變越來越難維護？
+從這裡開始，我的程式碼生命週期不再是局限於一個 Notebook，而是需要持續、不間斷的、在可預期的未來內，持續服務。
+交付形式的轉變：從「手動執行」到「應用落地」
+這種工程思維的轉變，讓我感覺更為扎實。
+之前在用 Notebook 時，我常常思考：「我這樣的模型，要怎麼真的應用？」
+當時，每次預測都得由我打開 Notebook 手動執行一次，這聽起來很不實際，也很難規模化。我認為有更好的方式，但以我當時的知識，又找不到更好的解答。
+直到我接觸了軟體工程，才真正明白如何將一個模型、邏輯包裝成應用服務。這種「把應用落地」的能力，補足了我過去身為 Data Scientist 時，「總感覺像是在實驗室」的拼圖。
+反饋機制的改變
+習慣用 Jupyter，最依賴的就是 REPL 的即時反饋，我白話為「隨時都需要Print」。寫一行、跑一行、看一下結果，不對就改。當時的我，認為邊寫邊 Print 好像有點怪怪的，但又無法脫離。
+轉到軟體工程後，修改邏輯、編譯、部署、打 API、看 Log，這個反饋的時間變長了。不像 REPL 能及時給我反饋。
+這使我必須先想清楚資料流怎麼跑、例外怎麼處理。Java 也幫助我很多，強型態的語言，讓我在理解資料流的轉換時也更加清晰。
+統計背景為我帶來的
+適應工程師的嚴謹是一個漫長的文化和心態的轉變。但回過頭看，過去的統計背景並沒有白費，反而帶來了些優勢。
+挑軟一點的能力說，我更擅長數據思維。在做系統監控時，更能理解 P95、P99 與平均值之間的差異與意義。
+挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。">
 
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Notes",
+      "item": "/notes/"
+    }
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "從 Jupyter Notebook 到 Production Code",
+      "item": "/notes/statistics-to-software/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "從 Jupyter Notebook 到 Production Code",
+  "name": "從 Jupyter Notebook 到 Production Code",
+  "description": "我大學念的是統計，畢業後先擔任Data Scientist，後來再轉職成為軟體工程師。 身為一個統計出身的人，這不只是技術上的變化，也是心態以及文化上的轉變。\n以前在寫 Python，用 Notebook 時，我總感覺自己像是在實驗室裡，目標是挖掘這些數據背後的資訊。我要的是圖表、是 Insight、是一個準確的模型。變數名稱叫 df1 或 tmp 沒關係，程式碼寫得髒一點也無所謂，因為模型建完了、報告交出去時，這一個 Notebook 所累積的段程式碼的任務就結束了。\n當時的我，並不真正理解什麼是「維護」，對於將程式碼部署到「Production 環境」意味著什麼，概念也相當模糊。\n直到當我轉向後端開發，開始接觸到企業系統時，我才漸漸摸清楚軟體工程是怎麼樣的一個建造過程。不再像是在實驗室，而是更貼近地氣的真槍實彈。\n我相信每個統計人，都會經歷相似的心態轉換。\n時間維度：當下 vs. 未來 在 Notebook 裡，我們關注的是「當下」。 只要現在 Cell 是綠色的，圖表是對的，那就夠了。前面定義的變數，後面隨時都能用。這種開發模式非常靈活，有點雜亂，但是超方便。\n但在 Production Code 裡，我們變得必須要關注「未來」。 我寫下的每一行 Code，三個月後，接手的同事能不能看懂？這個 Class 這樣設計，隨著邏輯和業務量增加會不會變越來越難維護？\n從這裡開始，我的程式碼生命週期不再是局限於一個 Notebook，而是需要持續、不間斷的、在可預期的未來內，持續服務。\n交付形式的轉變：從「手動執行」到「應用落地」 這種工程思維的轉變，讓我感覺更為扎實。\n之前在用 Notebook 時，我常常思考：「我這樣的模型，要怎麼真的應用？」 當時，每次預測都得由我打開 Notebook 手動執行一次，這聽起來很不實際，也很難規模化。我認為有更好的方式，但以我當時的知識，又找不到更好的解答。\n直到我接觸了軟體工程，才真正明白如何將一個模型、邏輯包裝成應用服務。這種「把應用落地」的能力，補足了我過去身為 Data Scientist 時，「總感覺像是在實驗室」的拼圖。\n反饋機制的改變 習慣用 Jupyter，最依賴的就是 REPL 的即時反饋，我白話為「隨時都需要Print」。寫一行、跑一行、看一下結果，不對就改。當時的我，認為邊寫邊 Print 好像有點怪怪的，但又無法脫離。\n轉到軟體工程後，修改邏輯、編譯、部署、打 API、看 Log，這個反饋的時間變長了。不像 REPL 能及時給我反饋。\n這使我必須先想清楚資料流怎麼跑、例外怎麼處理。Java 也幫助我很多，強型態的語言，讓我在理解資料流的轉換時也更加清晰。\n統計背景為我帶來的 適應工程師的嚴謹是一個漫長的文化和心態的轉變。但回過頭看，過去的統計背景並沒有白費，反而帶來了些優勢。\n挑軟一點的能力說，我更擅長數據思維。在做系統監控時，更能理解 P95、P99 與平均值之間的差異與意義。\n挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。\n",
+  "keywords": [
+    "statistics", "career", "software-engineering"
+  ],
+  "articleBody": "我大學念的是統計，畢業後先擔任Data Scientist，後來再轉職成為軟體工程師。 身為一個統計出身的人，這不只是技術上的變化，也是心態以及文化上的轉變。\n以前在寫 Python，用 Notebook 時，我總感覺自己像是在實驗室裡，目標是挖掘這些數據背後的資訊。我要的是圖表、是 Insight、是一個準確的模型。變數名稱叫 df1 或 tmp 沒關係，程式碼寫得髒一點也無所謂，因為模型建完了、報告交出去時，這一個 Notebook 所累積的段程式碼的任務就結束了。\n當時的我，並不真正理解什麼是「維護」，對於將程式碼部署到「Production 環境」意味著什麼，概念也相當模糊。\n直到當我轉向後端開發，開始接觸到企業系統時，我才漸漸摸清楚軟體工程是怎麼樣的一個建造過程。不再像是在實驗室，而是更貼近地氣的真槍實彈。\n我相信每個統計人，都會經歷相似的心態轉換。\n時間維度：當下 vs. 未來 在 Notebook 裡，我們關注的是「當下」。 只要現在 Cell 是綠色的，圖表是對的，那就夠了。前面定義的變數，後面隨時都能用。這種開發模式非常靈活，有點雜亂，但是超方便。\n但在 Production Code 裡，我們變得必須要關注「未來」。 我寫下的每一行 Code，三個月後，接手的同事能不能看懂？這個 Class 這樣設計，隨著邏輯和業務量增加會不會變越來越難維護？\n從這裡開始，我的程式碼生命週期不再是局限於一個 Notebook，而是需要持續、不間斷的、在可預期的未來內，持續服務。\n交付形式的轉變：從「手動執行」到「應用落地」 這種工程思維的轉變，讓我感覺更為扎實。\n之前在用 Notebook 時，我常常思考：「我這樣的模型，要怎麼真的應用？」 當時，每次預測都得由我打開 Notebook 手動執行一次，這聽起來很不實際，也很難規模化。我認為有更好的方式，但以我當時的知識，又找不到更好的解答。\n直到我接觸了軟體工程，才真正明白如何將一個模型、邏輯包裝成應用服務。這種「把應用落地」的能力，補足了我過去身為 Data Scientist 時，「總感覺像是在實驗室」的拼圖。\n反饋機制的改變 習慣用 Jupyter，最依賴的就是 REPL 的即時反饋，我白話為「隨時都需要Print」。寫一行、跑一行、看一下結果，不對就改。當時的我，認為邊寫邊 Print 好像有點怪怪的，但又無法脫離。\n轉到軟體工程後，修改邏輯、編譯、部署、打 API、看 Log，這個反饋的時間變長了。不像 REPL 能及時給我反饋。\n這使我必須先想清楚資料流怎麼跑、例外怎麼處理。Java 也幫助我很多，強型態的語言，讓我在理解資料流的轉換時也更加清晰。\n統計背景為我帶來的 適應工程師的嚴謹是一個漫長的文化和心態的轉變。但回過頭看，過去的統計背景並沒有白費，反而帶來了些優勢。\n挑軟一點的能力說，我更擅長數據思維。在做系統監控時，更能理解 P95、P99 與平均值之間的差異與意義。\n挑硬一點的能力說，資料的分析、模型的訓練、 AI 模型部署，是我從中所學非常有價值的事物。\n這個轉換的過程中，我也不免懷疑統計的訓練是否白費了。但當我和同儕工程師互動，發現大家其實對於模型訓練是感到困惑時，我才藉由這個方向來看見自己獨特優勢之處。原來我會這些，是有價值的。\n結語 統計教會了我如何從數據中挖掘價值，而軟體工程教會了我如何構建穩定可靠的系統，讓功能落地。\n",
+  "wordCount" : "74",
+  "inLanguage": "en",
+  "datePublished": "2025-11-28T17:05:00+08:00",
+  "dateModified": "2025-11-28T17:05:00+08:00",
+  "author":{
+    "@type": "Person",
+    "name": "Julian Zhan"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "/notes/statistics-to-software/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "/favicon.ico"
+    }
+  }
+}
+</script>
 </head>
 <body id="top">
     <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
             <div class="logo-switches">
             </div>
         </div>
         <ul id="menu">
             <li>
-                <a href="http://localhost:56114/engineering/" title="Engineering">
+                <a href="/engineering/" title="Engineering">
                     <span>Engineering</span>
                 </a>
             </li>
             <li>
-                <a href="http://localhost:56114/notes/" title="Notes">
+                <a href="/notes/" title="Notes">
                     <span>Notes</span>
                 </a>
             </li>
             <li>
-                <a href="http://localhost:56114/about/" title="About">
+                <a href="/about/" title="About">
                     <span>About</span>
                 </a>
             </li>
@@ -87,7 +192,7 @@
     <h1 class="post-title entry-hint-parent">
       從 Jupyter Notebook 到 Production Code
     </h1>
-    <div class="post-meta"><span title='2025-11-28 17:05:00 +0800 CST'>November 28, 2025</span>
+    <div class="post-meta"><span title='2025-11-28 17:05:00 +0800 CST'>November 28, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span>
 
 </div>
   </header> 
@@ -123,16 +228,16 @@
 
   <footer class="post-footer">
     <ul class="post-tags">
-      <li><a href="http://localhost:56114/tags/statistics/">Statistics</a></li>
-      <li><a href="http://localhost:56114/tags/career/">Career</a></li>
-      <li><a href="http://localhost:56114/tags/software-engineering/">Software-Engineering</a></li>
+      <li><a href="/tags/statistics/">Statistics</a></li>
+      <li><a href="/tags/career/">Career</a></li>
+      <li><a href="/tags/software-engineering/">Software-Engineering</a></li>
     </ul>
   </footer>
 </article>
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+        <span>&copy; 2026 <a href="/"></a></span> · 
 
     <span>
         Powered by

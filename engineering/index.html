@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html lang="en" dir="auto" data-theme="light">
 
-<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=56114&amp;path=livereload" data-no-instant defer></script><meta charset="utf-8">
+<head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="noindex, nofollow">
-<title>Engineering | Julian Zhan</title>
+<meta name="robots" content="index, follow">
+<title>Engineering | </title>
 <meta name="keywords" content="">
 <meta name="description" content="Longer-form writing on backend system design, cloud architecture, and the trade-offs that shape reliable systems.">
-<meta name="author" content="">
-<link rel="canonical" href="http://localhost:56114/engineering/">
+<meta name="author" content="Julian Zhan">
+<link rel="canonical" href="/engineering/">
 <link crossorigin="anonymous" href="/assets/css/stylesheet.c86d6e7e05a68a50f7a611b70e26d5a607fcbd938fd93fb454f39f7cf6862d03.css" integrity="sha256-yG1ufgWmilD3phG3DibVpgf8vZOP2T&#43;0VPOffPaGLQM=" rel="preload stylesheet" as="style">
-<link rel="icon" href="http://localhost:56114/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="http://localhost:56114/favicon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="http://localhost:56114/favicon.png">
-<link rel="apple-touch-icon" href="http://localhost:56114/apple-touch-icon.png">
-<link rel="mask-icon" href="http://localhost:56114/safari-pinned-tab.svg">
+<link rel="icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="mask-icon" href="/safari-pinned-tab.svg">
 <meta name="theme-color" content="#2e2e33">
 <meta name="msapplication-TileColor" content="#2e2e33">
-<link rel="alternate" type="application/rss+xml" href="http://localhost:56114/engineering/index.xml" title="rss">
-<link rel="alternate" hreflang="en" href="http://localhost:56114/engineering/">
+<link rel="alternate" type="application/rss+xml" href="/engineering/index.xml" title="rss">
+<link rel="alternate" hreflang="en" href="/engineering/">
 <noscript>
     <style>
         #theme-toggle,
@@ -29,29 +29,51 @@
 
     </style>
 </noscript><link rel="stylesheet" href="/css/custom.css">
+<meta property="og:url" content="/engineering/">
+  <meta property="og:title" content="Engineering">
+  <meta property="og:description" content="Longer-form writing on backend system design, cloud architecture, and the trade-offs that shape reliable systems.">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Engineering">
+<meta name="twitter:description" content="">
 
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position":  1 ,
+      "name": "Engineering",
+      "item": "/engineering/"
+    }
+  ]
+}
+</script>
 </head>
 <body class="list" id="top">
     <header class="header">
     <nav class="nav">
         <div class="logo">
-            <a href="http://localhost:56114/" accesskey="h" title="Julian Zhan (Alt + H)">Julian Zhan</a>
             <div class="logo-switches">
             </div>
         </div>
         <ul id="menu">
             <li>
-                <a href="http://localhost:56114/engineering/" title="Engineering">
+                <a href="/engineering/" title="Engineering">
                     <span class="active">Engineering</span>
                 </a>
             </li>
             <li>
-                <a href="http://localhost:56114/notes/" title="Notes">
+                <a href="/notes/" title="Notes">
                     <span>Notes</span>
                 </a>
             </li>
             <li>
-                <a href="http://localhost:56114/about/" title="About">
+                <a href="/about/" title="About">
                     <span>About</span>
                 </a>
             </li>
@@ -79,20 +101,23 @@
 這是一個真實發生的慘案，源自於我們一次「想讓系統更好」的架構決策。
 1.1 維運工具與自動化 在一個舊的兌換系統中，面對外部發券服務偶發的失敗，我們原本依賴一個「維運工具」，定期撈出失敗名單進行人工補發。 但團隊為了追求自動化，決定採用一個策略：
 「如果呼叫外部發券 API Timeout，系統就當下直接執行 Rollback，讓用戶可以立刻重試。」
-這個設計的出發點是善良的：我們不希望用戶因為網路不穩定，導致資格被卡住。 而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。
+這個設計的出發點是善良的：我們不希望用戶因為網路或系統不穩定，導致資格被卡住。 而這個決策的風險是什麼？是如果外部發券 API 回覆太慢而 Timeout，用戶會多領到一張券。這個風險，我們認為相當可以接受。
 1.2 弄巧成拙：27 張優惠券的誕生 然而，我們沒預期到的事，外部服務會一口氣 timeout 27次。
 當時的流程是 「同步直接兌換」：用戶點擊 &gt; 系統扣額度 &gt; 呼叫外部 API 發券。 當外部 API 回應太慢至 Timeout 時：
 系統判定失敗 &gt; 釋放用戶額度。 外部系統其實已發券成功。 用戶發現還可以兌換，於是再次點擊。 這個流程在短時間內重複了數十次。最終有位客戶領到了 27 張折價券。
 這是一個寶貴的經驗，我們低估了系統可能出錯的機率、時間長度和深度。我們以為用戶頂多多領到一張折價券，結果卻是27張。
-2. 架構進化：從「直接兌換」到「取得連結」 在建構新的兌換服務時，我們改變了交易流程。
-我們不再「直接呼叫發貨」，而是改為 **「取得兌換連結」**模式。 這個改變至關重要，它為我們創造了一個安全的 「緩衝區」，讓我們能安心地實作 TCC (Try-Confirm-Cancel)，在分散式交易下來確保交易的正確性。
+2. 另一套系統的啟示：因「限制」而生的安全緩衝 慘案後，我剛好需要開發一套全新的兌換系統。
+這個新系統有一個硬性限制：由於對接的外部服務特性，我們無法像舊系統那樣由後端直接呼叫 API 發券，必須改為產生一組「兌換連結」，讓用戶自己跳轉去網頁完成領取。
+起初，我們對這個限制感到相當無奈。因為在直覺上，這代表用戶體驗（UX）被犧牲。
+但就在實作過程中，我才後知後覺地發現：這個「被迫」的限制，竟然解決我們先前兌換時遇到的難題。
+舊系統（直接兌換）： 系統試圖同步完成所有事，一旦 Timeout 就陷入「狀態未明」。
+新系統（取連結模式）： 因為做不到直接兌換，強制切開了「鎖定資格」與「實際領取」。
+這個不得不為之的「連結跳轉」，無意間創造了一個 「緩衝區」。如果外部系統 Timeout，用戶頂多是沒拿到連結（交易停在 Try 階段），而永遠不可能發生「系統以為失敗，但外部其實發券了」的狀況。 這個改變至關重要，它為我們創造了一個安全的 「緩衝區」，讓我們能安心地實作 TCC (Try-Confirm-Cancel)，在分散式交易下來確保交易的正確性。
 3. TCC 分散式交易模式 我們將一筆兌換交易拆解為三個明確的階段：
-Try (資源預留 &amp; 取得連結)：
-鎖定資源：在資料庫中鎖定全域庫存與該用戶的可用額度。狀態設為 RESERVED。 外部請求：取得結帳連結。 關鍵防護： 為什麼改成「取得連結」就能防禦？ 如果這一步 Timeout，我們可以放心地執行 Cancel。因為只要用戶「沒拿到連結」，他就無法進行後續的兌換。就算外部系統真的生成了一個的購物車連結，只要連結沒送達用戶手上，這筆交易就實質失敗了。
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-12-10 18:00:00 +0800 CST'>December 10, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計" href="http://localhost:56114/engineering/consistent-redemptions/"></a>
+  <footer class="entry-footer"><span title='2025-12-10 18:00:00 +0800 CST'>December 10, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span></footer>
+  <a class="entry-link" aria-label="post link to 打造高併發下的交易一致性：從「27張優惠券」慘案談分散式系統設計" href="/engineering/consistent-redemptions/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -111,30 +136,8 @@ Try (資源預留 &amp; 取得連結)：
 我們進行了第一波優化：
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-12-10 17:03:00 +0800 CST'>December 10, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 從連續故障到系統韌性：JDBC 連線與大流量衝擊" href="http://localhost:56114/engineering/system-resilience-practice/"></a>
-</article>
-
-<article class="post-entry"> 
-  <header class="entry-header">
-    <h2 class="entry-hint-parent">從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思
-    </h2>
-  </header>
-  <div class="entry-content">
-    <p>為什麼搬？ 隨著公司推動雲原生，我們團隊雲原生化的路上，最棘手的挑戰，是 3 個還在 VM 裡的 MySQL 資料庫。
-這 3 個資料庫是早期的外部廠商建立的，對目前的團隊來說，它們就像是三個「黑箱」。大家不熟悉，平常也盡量不去修改它。
-除了版本較舊是 MySQL 5.7，也有著過度的 Over Provisioning，資料量只有幾十 GB，卻配置了 1 TB 的硬碟。
-因此，這次的資料庫 Migration 的目標：
-雲原生：搬遷至 Cloud SQL，減少維運成本。 版本升級：從 MySQL 5.7 升級至 8.0。 成本優化：解決資源浪費問題。 遷移策略 我有幸能主導這一項非常 Critical 的資料庫雲原生計畫，感恩主管給我這個機會。 現在回頭看，覺得我當時的選擇很「笨」。但當時，團隊對於各種雲端功能還沒那麼高的掌握。我並不知道 Cloud SQL 其實支援 External Replica，可以把 Cloud SQL 設為 VM 的 Slave。
-在我當時的認知裡，資料庫遷移的標準作業程序：
-停機 匯出 搬運 匯入 大功告成！
-嚴密的規劃 我們以較「笨」的方式執行，所以我更要確保每個執行步驟不能夠出錯。
-我也做了 3 件事來確保 Migration 能順利執行：
-視覺化流程 口頭討論流程容易有盲點，所以我用 PlantUML 畫出了時序圖，包含萬一出意外時的 Rollback Plan（當然是希望不要用到）。 什麼時間點切斷？什麼時間點執行 Dump？如果驗證失敗，切回舊 VM 的順序是什麼？這些都在圖上定義清楚，確保團隊認知一致。
-...</p>
-  </div>
-  <footer class="entry-footer"><span title='2025-12-10 09:54:00 +0800 CST'>December 10, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 從 VM MySQL 5.7 到 Cloud SQL 8.0：一場「硬著陸」的整理與反思" href="http://localhost:56114/engineering/db-migration/"></a>
+  <footer class="entry-footer"><span title='2025-12-10 17:03:00 +0800 CST'>December 10, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span></footer>
+  <a class="entry-link" aria-label="post link to 從連續故障到系統韌性：JDBC 連線與大流量衝擊" href="/engineering/system-resilience-practice/"></a>
 </article>
 
 <article class="post-entry"> 
@@ -152,13 +155,13 @@ Try (資源預留 &amp; 取得連結)：
 Code is the only Documentation 這次 Migration 最困難的是 「考古」。 因為沒有明確可靠的 Spec，我們必須讀懂原本 PHP 在做什麼，然後改寫成 Java。
 ...</p>
   </div>
-  <footer class="entry-footer"><span title='2025-12-09 11:22:00 +0800 CST'>December 9, 2025</span></footer>
-  <a class="entry-link" aria-label="post link to 從 PHP 到 Java：100&#43; API 的「考古」與重構之旅" href="http://localhost:56114/engineering/php-to-java-migration/"></a>
+  <footer class="entry-footer"><span title='2025-12-09 11:22:00 +0800 CST'>December 9, 2025</span>&nbsp;·&nbsp;<span>Julian Zhan</span></footer>
+  <a class="entry-link" aria-label="post link to 從 PHP 到 Java：100&#43; API 的「考古」與重構之旅" href="/engineering/php-to-java-migration/"></a>
 </article>
     </main>
     
 <footer class="footer">
-        <span>&copy; 2025 <a href="http://localhost:56114/">Julian Zhan</a></span> · 
+        <span>&copy; 2026 <a href="/"></a></span> · 
 
     <span>
         Powered by
